@@ -80,6 +80,8 @@ Widget *create_widget(widget_type type,Window parent,int x,int y,unsigned int wi
 
 void draw_widget_title_bar(Widget *wg) {
 
+    if (wg->text == NULL ) return;
+
     static Bool init=False;
     static XftFont *font;
     static XRenderColor xrcolor;
@@ -253,6 +255,9 @@ void create_window_decoration(Window window) {
     	title_width-button_width*2,0,button_width,button_width,xcolors[col_normal]);
    iconify_button->bmp = bm_iconify;
 
+   // Add to SaveSet
+   XAddToSaveSet(display,window);
+
     // reparent window into decoration
     XReparentWindow(display,window,decoration->w,deco_l,deco_t);
 
@@ -278,14 +283,6 @@ Widget *find_widget_from_window(Window w) {
 void on_expose_event(XExposeEvent e) {
 
     // find widget in widget list
-    /*Widget search;
-    search.w = e.window;
-
-
-
-    const void *find = tfind(&search,&widget_list,widget_cmp);
-    widget = (*(Widget **)find);*/
-
     Widget *widget = find_widget_from_window(e.window);
 
     if (widget==NULL) { // not found
@@ -349,6 +346,33 @@ void on_buttonpress_event(XButtonPressedEvent e) {
 
     }
 
+
+}
+
+
+void reparent_root_windows() {
+
+    // grap display during reparenting
+    XGrabServer(display);
+
+    //find root windows
+    Window root_return,parent;
+    Window *children,*child;
+    unsigned int nchildren=0,i;
+    Window root = RootWindow(display, screen_num);
+    XQueryTree(display, root, &root_return, &parent, &children, &nchildren);
+printf("children=%d\n",nchildren);
+    // reparent windows
+
+    for(i=0, child=children; i<nchildren; i ++,child++) {
+            printf("i=%d\n",i);
+      create_window_decoration(*child);
+    }
+
+   // if (children) XFree(children);
+
+    // ungrap display
+    XUngrabServer(display);
 
 }
 
