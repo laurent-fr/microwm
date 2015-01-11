@@ -361,15 +361,13 @@ void reparent_root_windows() {
     unsigned int nchildren=0,i;
     Window root = RootWindow(display, screen_num);
     XQueryTree(display, root, &root_return, &parent, &children, &nchildren);
-printf("children=%d\n",nchildren);
-    // reparent windows
 
+    // reparent windows
     for(i=0, child=children; i<nchildren; i ++,child++) {
-            printf("i=%d\n",i);
       create_window_decoration(*child);
     }
 
-   // if (children) XFree(children);
+    if (children) XFree(children);
 
     // ungrap display
     XUngrabServer(display);
