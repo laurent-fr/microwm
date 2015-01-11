@@ -18,28 +18,29 @@
 #define deco_b 4
 
 typedef enum {
-	wg_frame,
-	wg_decoration,
-	wg_title_bar,
-	wg_button
+    wg_frame,
+    wg_decoration,
+    wg_title_bar,
+    wg_button
 }  widget_type ;
+
+enum  {
+    bm_close,
+    bm_full,
+    bm_iconify
+} ;
 
 /*
 struct wm_window {
-
-	RB_ENTRY(widget) link;
-	
 
 }
 */
 
 typedef struct Widget_s {
-
-//	RB_ENTRY(widget) link;
-	Window w;
-	widget_type type;
-	char *text;
-	char **bitmap;
+    Window w;
+    widget_type type;
+    int bmp;
+    char *text;
 } Widget ;
 
 
