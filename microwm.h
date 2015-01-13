@@ -36,18 +36,29 @@ struct wm_window {
 }
 */
 
-typedef struct Widget_s {
+typedef struct {
+    unsigned int width;
+    unsigned int height;
+    int top;
+    int left;
+    int right;
+    int bottom;
+} WgGeometry ;
+
+
+typedef struct {
     Window w;
+    Window parent;
     widget_type type;
+    WgGeometry geom;
     int bmp;
     char *text;
 } Widget ;
 
 
-
 void connect_x_server();
 
-Widget *create_widget(widget_type type,Window parent,int x,int y,unsigned int w,unsigned int h,XColor color);
+Widget *create_widget(widget_type type,Window parent,WgGeometry *geometry,XColor color);
 
 void draw_widget_button(Widget *wg);
 void draw_widget_title_bar(Widget *wg);

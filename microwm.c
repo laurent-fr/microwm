@@ -48,18 +48,51 @@ int widget_cmp(const void *wg1,const void *wg2) {
     return wwg1->w - wwg2->w;
 }
 
-Widget *create_widget(widget_type type,Window parent,int x,int y,unsigned int width,unsigned int height,XColor color) {
 
+void wg_resolve_geometry(WgGeometry *geom, Window parent, int *x,int *y, unsigned int *width, unsigned int *height) {
+
+    *x=0; *y=0; *width=0; *height=0;
+
+    if (geom->left) *x=geom->left;
+    if (geom->top) *y=geom->top;
+    if (geom->width) *width=geom->width;
+    if (geom->height) *height=geom->height;
+
+    if (geom->bottom>=0 || geom->right>=0) {
+        // get decoration size
+        Window root_window;
+        int parent_x,parent_y;
+        unsigned int parent_width,parent_height,parent_border,parent_depth;
+        XGetGeometry(display,parent,&root_window,&parent_x,&parent_y,&parent_width,&parent_height,&parent_border,&parent_depth);
+
+        if (geom->right>=0) *x = parent_width - geom->width - geom->right;
+        if (geom->bottom>=0) *y = parent_height - geom->height - geom->bottom;
+        
+
+    }
+}
+
+
+Widget *create_widget(widget_type type,Window parent,WgGeometry *geometry,XColor color) {
+
+    int x,y;
+    unsigned int width,height;
+
+    wg_resolve_geometry(geometry,parent,&x,&y,&width,&height);
+printf("size = %d %d %d %d\n",x,y,width,height);
     // create window
     Window w = XCreateSimpleWindow(display, parent,x,y,width,height, 0, NIL, color.pixel);
 
     // allocate widget structure
     Widget *widget = (Widget *)malloc(sizeof(Widget));
     widget->w = w;
+    widget->parent=parent;
     widget->type=type;
     widget->text = NULL;
     widget->bmp = 0;
+    memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
     printf("create_window %d %d\n",(int)w,type);
+    printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
     // save widget into list
     tsearch(widget,&widget_list,widget_cmp);
 
@@ -226,14 +259,17 @@ void create_window_decoration(Window window) {
     if(deco_y<0) deco_y=0;
 
     // decoration frame
+    WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 }; 
+    
     Widget *decoration = create_widget(wg_decoration, DefaultRootWindow(display),
-                                       deco_x,deco_y,deco_w,deco_h,xcolors[col_normal]);
+                                       &frame_geom,xcolors[col_normal]);
 
     // add title bar
     int title_width=deco_w-deco_l-deco_r;
     int title_height=deco_t-deco_b;
+    WgGeometry title_bar_geom = { .left=deco_l, .top=deco_b-1, .width=title_width, .height=title_height, .bottom=-1, .right=-1  };
     Widget *title_bar = create_widget(wg_title_bar, decoration->w,
-                                      deco_l,deco_b-1,title_width,title_height,xcolors[col_normal]);
+                                     &title_bar_geom,xcolors[col_normal]);
 
     // get window title
     get_window_name(window,&(title_bar->text));
@@ -241,18 +277,20 @@ void create_window_decoration(Window window) {
 
     // add buttons
     int button_width=title_height-1;
+    WgGeometry close_geom = { .left=0, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=-1 };
     Widget *close_button = create_widget(wg_button,title_bar->w,
-                                         0,0,button_width,button_width,xcolors[col_normal]);
+                                         &close_geom,xcolors[col_normal]);
 
    close_button->bmp = bm_close;
 
-
+    WgGeometry full_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=0 }; 
     Widget *full_button = create_widget(wg_button,title_bar->w,
-    	title_width-button_width,0,button_width,button_width,xcolors[col_normal]);
+    	&full_geom,xcolors[col_normal]);
    full_button->bmp = bm_full;
-
+   
+   WgGeometry iconify_geom ={ .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
     Widget *iconify_button = create_widget(wg_button,title_bar->w,
-    	title_width-button_width*2,0,button_width,button_width,xcolors[col_normal]);
+    	&iconify_geom,xcolors[col_normal]);
    iconify_button->bmp = bm_iconify;
 
    // Add to SaveSet
