@@ -46,9 +46,9 @@ typedef struct {
 } WgGeometry ;
 
 
-typedef struct {
+typedef struct Widget_s {
     Window w;
-    Window parent;
+    struct Widget_s *parent;
     widget_type type;
     WgGeometry geom;
     int bmp;
@@ -58,11 +58,15 @@ typedef struct {
 
 void connect_x_server();
 
-Widget *create_widget(widget_type type,Window parent,WgGeometry *geometry,XColor color);
+void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height);
+Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
+Widget *wg_create_from_x(widget_type,Window w,Widget *parent,WgGeometry *geometry);
 
 void draw_widget_button(Widget *wg);
 void draw_widget_title_bar(Widget *wg);
 void draw_widget_decoration(Widget *wg);
+
+Widget *wg_find_from_window(Window w);
 
 void create_window_decoration(Window window);
 void main_event_loop();

@@ -49,7 +49,7 @@ int widget_cmp(const void *wg1,const void *wg2) {
 }
 
 
-void wg_resolve_geometry(WgGeometry *geom, Window parent, int *x,int *y, unsigned int *width, unsigned int *height) {
+void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height) {
 
     *x=0; *y=0; *width=0; *height=0;
 
@@ -63,7 +63,7 @@ void wg_resolve_geometry(WgGeometry *geom, Window parent, int *x,int *y, unsigne
         Window root_window;
         int parent_x,parent_y;
         unsigned int parent_width,parent_height,parent_border,parent_depth;
-        XGetGeometry(display,parent,&root_window,&parent_x,&parent_y,&parent_width,&parent_height,&parent_border,&parent_depth);
+        XGetGeometry(display,parent->w,&root_window,&parent_x,&parent_y,&parent_width,&parent_height,&parent_border,&parent_depth);
 
         if (geom->right>=0) *x = parent_width - geom->width - geom->right;
         if (geom->bottom>=0) *y = parent_height - geom->height - geom->bottom;
@@ -73,7 +73,8 @@ void wg_resolve_geometry(WgGeometry *geom, Window parent, int *x,int *y, unsigne
 }
 
 
-Widget *create_widget(widget_type type,Window parent,WgGeometry *geometry,XColor color) {
+
+Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color) {
 
     int x,y;
     unsigned int width,height;
@@ -81,7 +82,20 @@ Widget *create_widget(widget_type type,Window parent,WgGeometry *geometry,XColor
     wg_resolve_geometry(geometry,parent,&x,&y,&width,&height);
 printf("size = %d %d %d %d\n",x,y,width,height);
     // create window
-    Window w = XCreateSimpleWindow(display, parent,x,y,width,height, 0, NIL, color.pixel);
+   Window parent_window;
+   if (parent==NULL) 
+		parent_window=DefaultRootWindow(display);
+	else
+		parent_window=parent->w;
+
+    Window w = XCreateSimpleWindow(display, parent_window,x,y,width,height, 0, NIL, color.pixel);
+
+    return wg_create_from_x(type,w,parent,geometry);
+
+}
+
+
+Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *geometry) {
 
     // allocate widget structure
     Widget *widget = (Widget *)malloc(sizeof(Widget));
@@ -108,6 +122,34 @@ printf("size = %d %d %d %d\n",x,y,width,height);
     XMapWindow(display, w);
 
     return widget;
+}
+
+
+void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
+
+	Window w = wg->w;
+
+	XResizeWindow(display,w,new_width,new_height);
+
+		// find childs
+        Window root,parent;
+        Window *children;
+        unsigned int nchildren;
+        XQueryTree(display, w, &root, &parent, &children, &nchildren);
+
+		if (nchildren==0) return;
+
+		for(unsigned int i=0;i<nchildren;i ++) {
+			Widget *child=wg_find_from_window(children[i]);
+			if (!child) continue;
+			int child_x,child_y;
+			unsigned int child_width,child_height;
+			wg_resolve_geometry(&(child->geom), wg, &child_x,&child_y, &child_width, &child_height);
+			wg_resize(child,child_width,child_height);
+		}
+
+        if (children) XFree(children);	
+
 }
 
 
@@ -261,14 +303,14 @@ void create_window_decoration(Window window) {
     // decoration frame
     WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 }; 
     
-    Widget *decoration = create_widget(wg_decoration, DefaultRootWindow(display),
+    Widget *decoration = create_widget(wg_decoration, NULL,
                                        &frame_geom,xcolors[col_normal]);
 
     // add title bar
     int title_width=deco_w-deco_l-deco_r;
     int title_height=deco_t-deco_b;
     WgGeometry title_bar_geom = { .left=deco_l, .top=deco_b-1, .width=title_width, .height=title_height, .bottom=-1, .right=-1  };
-    Widget *title_bar = create_widget(wg_title_bar, decoration->w,
+    Widget *title_bar = create_widget(wg_title_bar, decoration,
                                      &title_bar_geom,xcolors[col_normal]);
 
     // get window title
@@ -278,18 +320,18 @@ void create_window_decoration(Window window) {
     // add buttons
     int button_width=title_height-1;
     WgGeometry close_geom = { .left=0, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=-1 };
-    Widget *close_button = create_widget(wg_button,title_bar->w,
+    Widget *close_button = create_widget(wg_button,title_bar,
                                          &close_geom,xcolors[col_normal]);
 
    close_button->bmp = bm_close;
 
     WgGeometry full_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=0 }; 
-    Widget *full_button = create_widget(wg_button,title_bar->w,
+    Widget *full_button = create_widget(wg_button,title_bar,
     	&full_geom,xcolors[col_normal]);
    full_button->bmp = bm_full;
    
    WgGeometry iconify_geom ={ .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
-    Widget *iconify_button = create_widget(wg_button,title_bar->w,
+    Widget *iconify_button = create_widget(wg_button,title_bar,
     	&iconify_geom,xcolors[col_normal]);
    iconify_button->bmp = bm_iconify;
 
@@ -303,7 +345,7 @@ void create_window_decoration(Window window) {
 
 }
 
-Widget *find_widget_from_window(Window w) {
+Widget *wg_find_from_window(Window w) {
 
     // find widget in widget list
     Widget search;
@@ -321,7 +363,7 @@ Widget *find_widget_from_window(Window w) {
 void on_expose_event(XExposeEvent e) {
 
     // find widget in widget list
-    Widget *widget = find_widget_from_window(e.window);
+    Widget *widget = wg_find_from_window(e.window);
 
     if (widget==NULL) { // not found
         printf("Widget not found\n");
@@ -370,7 +412,7 @@ printf("titlebar click\n");
 
 void on_buttonpress_event(XButtonPressedEvent e) {
 
-    Widget *widget = find_widget_from_window(e.window);
+    Widget *widget = wg_find_from_window(e.window);
 
     if (widget==NULL) { // not found
         printf("Widget not found\n");
