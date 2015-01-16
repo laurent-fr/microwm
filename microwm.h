@@ -18,7 +18,7 @@
 #define deco_b 4
 
 typedef enum {
-    wg_frame,
+    wg_x11,
     wg_decoration,
     wg_title_bar,
     wg_button
@@ -37,8 +37,8 @@ struct wm_window {
 */
 
 typedef struct {
-    unsigned int width;
-    unsigned int height;
+    int width;
+    int height;
     int top;
     int left;
     int right;
@@ -61,6 +61,9 @@ void connect_x_server();
 void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height);
 Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
 Widget *wg_create_from_x(widget_type,Window w,Widget *parent,WgGeometry *geometry);
+
+void wg_move(Widget *wg,int new_x, int new_y);
+void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height);
 
 void draw_widget_button(Widget *wg);
 void draw_widget_title_bar(Widget *wg);

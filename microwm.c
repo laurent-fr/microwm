@@ -53,10 +53,10 @@ void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsign
 
     *x=0; *y=0; *width=0; *height=0;
 
-    if (geom->left) *x=geom->left;
-    if (geom->top) *y=geom->top;
-    if (geom->width) *width=geom->width;
-    if (geom->height) *height=geom->height;
+    if (geom->left>=0) *x=geom->left;
+    if (geom->top>=0) *y=geom->top;
+    if (geom->width>=0) *width=geom->width;
+    if (geom->height>=0) *height=geom->height;
 
     if (geom->bottom>=0 || geom->right>=0) {
         // get decoration size
@@ -65,11 +65,15 @@ void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsign
         unsigned int parent_width,parent_height,parent_border,parent_depth;
         XGetGeometry(display,parent->w,&root_window,&parent_x,&parent_y,&parent_width,&parent_height,&parent_border,&parent_depth);
 
-        if (geom->right>=0) *x = parent_width - geom->width - geom->right;
-        if (geom->bottom>=0) *y = parent_height - geom->height - geom->bottom;
-        
+        if ((geom->right>=0)&&(geom->width>0)) *x = parent_width - geom->width - geom->right;
+        if ((geom->bottom>=0)&&(geom->height>0)) *y = parent_height - -geom->height - geom->bottom;
+		if (geom->width<0) *width = parent_width - geom->left - geom->right;
+        if (geom->height<0) *height = parent_height - geom->top - geom->bottom;
 
     }
+
+	//printf("resolv geom    : l=%d, t=%d, w=%d, h=%d, r=%d, b=%d\n",geom->left,geom->top,geom->width,geom->height,geom->right,geom->bottom);
+	//printf("resolve result : x=%d, y=%d, w=%d, h=%d\n",*x,*y, *width, *height);
 }
 
 
@@ -90,8 +94,20 @@ printf("size = %d %d %d %d\n",x,y,width,height);
 
     Window w = XCreateSimpleWindow(display, parent_window,x,y,width,height, 0, NIL, color.pixel);
 
-    return wg_create_from_x(type,w,parent,geometry);
+    Widget *new_widget =  wg_create_from_x(type,w,parent,geometry);
 
+    // add override_redirect to the decoration
+   // XSetWindowAttributes attributes;
+   // attributes.override_redirect = True;
+   // XChangeWindowAttributes(display,w,CWOverrideRedirect,&attributes);
+
+    // add event
+    XSelectInput(display, new_widget->w , ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask );
+
+    // map window
+    XMapWindow(display, new_widget->w);
+
+	return new_widget;
 }
 
 
@@ -110,20 +126,12 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     // save widget into list
     tsearch(widget,&widget_list,widget_cmp);
 
-    // add override_redirect to the decoration
-    XSetWindowAttributes attributes;
-    attributes.override_redirect = True;
-    XChangeWindowAttributes(display,w,CWOverrideRedirect,&attributes);
-
-    // add event
-    XSelectInput(display, w , ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask );
-
-    // map window
-    XMapWindow(display, w);
-
     return widget;
 }
 
+void wg_move(Widget *wg,int new_x, int new_y) {
+	XMoveWindow(display,wg->w,new_x,new_y);
+}
 
 void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 
@@ -146,6 +154,7 @@ void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 			unsigned int child_width,child_height;
 			wg_resolve_geometry(&(child->geom), wg, &child_x,&child_y, &child_width, &child_height);
 			wg_resize(child,child_width,child_height);
+			wg_move(child,child_x,child_y);
 		}
 
         if (children) XFree(children);	
@@ -307,9 +316,8 @@ void create_window_decoration(Window window) {
                                        &frame_geom,xcolors[col_normal]);
 
     // add title bar
-    int title_width=deco_w-deco_l-deco_r;
     int title_height=deco_t-deco_b;
-    WgGeometry title_bar_geom = { .left=deco_l, .top=deco_b-1, .width=title_width, .height=title_height, .bottom=-1, .right=-1  };
+    WgGeometry title_bar_geom = { .left=deco_l, .top=deco_b-1, .width=-1, .height=title_height, .bottom=-1, .right=deco_r };
     Widget *title_bar = create_widget(wg_title_bar, decoration,
                                      &title_bar_geom,xcolors[col_normal]);
 
@@ -335,6 +343,10 @@ void create_window_decoration(Window window) {
     	&iconify_geom,xcolors[col_normal]);
    iconify_button->bmp = bm_iconify;
 
+	// the x11 window itself
+	WgGeometry window_geom = { .left=deco_l, .top=deco_t, .width=-1, .height=-1, .bottom=deco_b, .right=deco_r };
+	wg_create_from_x(wg_x11,window,decoration,&window_geom);
+
    // Add to SaveSet
    XAddToSaveSet(display,window);
 
@@ -354,8 +366,9 @@ Widget *wg_find_from_window(Window w) {
     Widget *widget = NULL;
 
     const void *find = tfind(&search,&widget_list,widget_cmp);
-    widget = (*(Widget **)find);
+	if (!find) return NULL;
 
+    widget = (*(Widget **)find);
     return widget;
 
 }
@@ -408,6 +421,13 @@ printf("titlebar click\n");
 
         // raise window
         XRaiseWindow(display, parent);
+
+		// test : resize
+		Widget *widget = wg_find_from_window(w);
+		if (widget)
+		wg_resize(widget->parent,700,400);
+
+		
 }
 
 void on_buttonpress_event(XButtonPressedEvent e) {
