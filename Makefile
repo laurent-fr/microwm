@@ -1,5 +1,5 @@
 CC=colorgcc
-CFLAGS=-W -Wall -std=gnu99 -pedantic -I /usr/include -I/usr/include/freetype2/
+CFLAGS=-g -W -Wall -std=gnu99 -pedantic -I/usr/include/freetype2/
 LDFLAGS=-lX11 -lXft -lXpm
 
 all: microwm
