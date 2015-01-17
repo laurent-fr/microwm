@@ -12,10 +12,12 @@
 #define NIL (0)       // A name for the void pointer
 
 
-#define deco_l 4
+/*#define deco_l 4
 #define deco_r 4
 #define deco_t 20
-#define deco_b 4
+#define deco_b 4*/
+#define DECORATION_MARGIN 4
+#define DECORATION_MARGIN_TOP 20
 
 typedef enum {
     wg_x11,
@@ -72,6 +74,9 @@ void draw_widget_decoration(Widget *wg);
 Widget *wg_find_from_window(Window w);
 
 void create_window_decoration(Window window);
+
+void reparent_root_windows();
+
 void main_event_loop();
 
 
