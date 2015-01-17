@@ -11,14 +11,11 @@
 
 #define NIL (0)       // A name for the void pointer
 
-
-#define deco_l 4
-#define deco_r 4
-#define deco_t 20
-#define deco_b 4
+#define DECORATION_MARGIN 4
+#define DECORATION_MARGIN_TOP 20
 
 typedef enum {
-    wg_frame,
+    wg_x11,
     wg_decoration,
     wg_title_bar,
     wg_button
@@ -36,24 +33,45 @@ struct wm_window {
 }
 */
 
+typedef struct {
+    int width;
+    int height;
+    int top;
+    int left;
+    int right;
+    int bottom;
+} WgGeometry ;
+
+
 typedef struct Widget_s {
     Window w;
+    struct Widget_s *parent;
     widget_type type;
+    WgGeometry geom;
     int bmp;
     char *text;
 } Widget ;
 
 
-
 void connect_x_server();
 
-Widget *create_widget(widget_type type,Window parent,int x,int y,unsigned int w,unsigned int h,XColor color);
+void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height);
+Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
+Widget *wg_create_from_x(widget_type,Window w,Widget *parent,WgGeometry *geometry);
+
+void wg_move(Widget *wg,int new_x, int new_y);
+void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height);
 
 void draw_widget_button(Widget *wg);
 void draw_widget_title_bar(Widget *wg);
 void draw_widget_decoration(Widget *wg);
 
+Widget *wg_find_from_window(Window w);
+
 void create_window_decoration(Window window);
+
+void reparent_root_windows();
+
 void main_event_loop();
 
 
