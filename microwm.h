@@ -56,6 +56,9 @@ typedef struct Widget_s {
 } Widget ;
 
 
+// prototypes
+// **********
+
 void connect_x_server();
 
 void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height);

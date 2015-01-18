@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 #include <search.h>
 
 #include "microwm.h"
@@ -67,6 +68,11 @@ void connect_x_server() {
 
 }
 
+
+// widgets functions
+// ******************
+
+// compare function for LIBC trees
 int widget_cmp(const void *wg1,const void *wg2) {
     Widget *wwg1=(Widget *)wg1;
     Widget *wwg2=(Widget *)wg2;
@@ -235,6 +241,8 @@ void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 
 }
 
+// Drawing functions
+// ******************
 
 void draw_widget_title_bar(Widget *wg) {
 
