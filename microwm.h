@@ -81,6 +81,9 @@ void create_window_decoration(Window window);
 void on_click_title_bar(XButtonPressedEvent e);
 void on_click_decoration(XButtonPressedEvent e);
 void on_motion_decoration(XMotionEvent e);
+void on_click_close(XButtonPressedEvent e);
+void on_click_full(XButtonPressedEvent e);
+void on_click_iconify(XButtonPressedEvent e);
 
 void wg_destroy_all();
 void reparent_root_windows();

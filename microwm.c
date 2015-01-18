@@ -109,7 +109,7 @@ Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColo
     unsigned int width,height;
 
     wg_resolve_geometry(geometry,parent,&x,&y,&width,&height);
-    printf("size = %d %d %d %d\n",x,y,width,height);
+
     // create window
     Window parent_window;
     if (parent==NULL)
@@ -196,7 +196,7 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->on_motion = NULL;
     memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
     printf("create_window %d %d\n",(int)w,type);
-    printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
+    //printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
     // save widget into list
     tsearch(widget,&widget_list,widget_cmp);
 
@@ -329,7 +329,7 @@ void draw_widget_decoration(Widget *wg) {
     int x,y;
     unsigned int width,height,border,depth;
     XGetGeometry(display,wg->w,&root_window,&x,&y,&width,&height,&border,&depth);
-    printf ("x=%d, y=%d, w=%d, h=%d,border=%d\n",x,y,width,height,border);
+    //printf ("x=%d, y=%d, w=%d, h=%d,border=%d\n",x,y,width,height,border);
 
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
@@ -419,7 +419,10 @@ void create_window_decoration(Window window) {
     // add events
     decoration->on_motion = &on_motion_decoration;
     decoration->on_click = &on_click_decoration;
-    title_bar->on_click =&on_click_title_bar;
+    title_bar->on_click = &on_click_title_bar;
+    close_button->on_click = &on_click_close;
+    iconify_button->on_click = &on_click_iconify;
+    full_button->on_click = &on_click_full;
 
     // Add to SaveSet
     XAddToSaveSet(display,window);
@@ -447,32 +450,29 @@ Widget *wg_find_from_window(Window w) {
 
 }
 
+
 void on_expose_event(XExposeEvent e) {
 
     // find widget in widget list
     Widget *widget = wg_find_from_window(e.window);
-
-    if (widget==NULL) { // not found
-        printf("Widget not found\n");
-        return;
-    }
+    if (!widget) return;
 
     switch(widget->type) {
     case wg_decoration:
         draw_widget_decoration(widget);
-        printf("decoration\n");
+        //printf("decoration\n");
 
         break;
 
     case wg_title_bar:
         draw_widget_title_bar(widget);
-        printf("title_bar\n");
+        //printf("title_bar\n");
 
         break;
 
     case wg_button:
         draw_widget_button(widget);
-        printf("title_bar\n");
+        //printf("title_bar\n");
 
         break;
 
@@ -484,13 +484,16 @@ void on_expose_event(XExposeEvent e) {
 
 }
 
+
+// Widget events
+// **************
+
+// display one of 8 resize cursors when the mouse is on the edge of a decoration window
 void on_motion_decoration(XMotionEvent e) {
 
     int x = e.x;
     int y = e.y;
     int position = 0;
-
-    printf("motion x=%d y=%d\n",x,y);
 
     //get decoration size
     XWindowAttributes deco_attrs;
@@ -505,6 +508,7 @@ void on_motion_decoration(XMotionEvent e) {
 
 }
 
+// move a window
 void on_click_title_bar(XButtonPressedEvent e) {
 
     Window w = e.window;
@@ -556,6 +560,7 @@ void on_click_title_bar(XButtonPressedEvent e) {
 
 }
 
+// resize a window
 void on_click_decoration(XButtonPressedEvent e) {
 
     Window w = e.window;
@@ -630,6 +635,33 @@ void on_click_decoration(XButtonPressedEvent e) {
 
     }
 }
+
+void on_click_close(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+void on_click_iconify(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+void on_click_full(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+// generic events handlers
+// ************************
 
 void on_buttonpress_event(XButtonPressedEvent e) {
 
