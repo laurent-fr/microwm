@@ -33,6 +33,7 @@ struct wm_window {
 }
 */
 
+
 typedef struct {
     int width;
     int height;
@@ -50,6 +51,8 @@ typedef struct Widget_s {
     WgGeometry geom;
     int bmp;
     char *text;
+    void (*on_click)(XButtonPressedEvent);
+    void (*on_motion)(XMotionEvent);
 } Widget ;
 
 
@@ -70,6 +73,14 @@ Widget *wg_find_from_window(Window w);
 
 void create_window_decoration(Window window);
 
+void on_click_title_bar(XButtonPressedEvent e);
+void on_click_decoration(XButtonPressedEvent e);
+void on_motion_decoration(XMotionEvent e);
+void on_click_close(XButtonPressedEvent e);
+void on_click_full(XButtonPressedEvent e);
+void on_click_iconify(XButtonPressedEvent e);
+
+void wg_destroy_all();
 void reparent_root_windows();
 
 void main_event_loop();

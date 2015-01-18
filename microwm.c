@@ -7,10 +7,12 @@
 #include "bitmap/full.xpm"
 #include "bitmap/iconify.xpm"
 
+// globals
 Display *display;
 int screen_num;
 Colormap colormap;
 
+// colors
 enum {
     col_light,
     col_dark,
@@ -20,9 +22,26 @@ enum {
 };
 
 XColor xcolors[col_count];
-
 char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333"};
 
+// cursors
+#define NB_CURSOR 11
+unsigned int cursors_def[]={
+		XC_left_ptr,XC_top_side,XC_bottom_side,XC_fleur,
+		XC_right_side,XC_top_right_corner,XC_bottom_right_corner, XC_arrow,
+		XC_left_side,XC_top_left_corner,XC_bottom_left_corner
+		 };
+
+Cursor xcursors[NB_CURSOR];
+
+enum {
+    north =1,
+    south =2,
+    east = 4,
+    west = 8
+};
+
+// widgets tree
 void *widget_list = NULL;
 
 
@@ -40,6 +59,12 @@ void connect_x_server() {
         XAllocColor(display, colormap, &xcolors[i]);
     }
 
+    // init cursors
+    for(int i=0;i<NB_CURSOR;i ++) {
+		xcursors[i]=XCreateFontCursor(display,cursors_def[i]);
+	}
+
+
 }
 
 int widget_cmp(const void *wg1,const void *wg2) {
@@ -47,7 +72,6 @@ int widget_cmp(const void *wg1,const void *wg2) {
     Widget *wwg2=(Widget *)wg2;
     return wwg1->w - wwg2->w;
 }
-
 
 void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height) {
 
@@ -85,7 +109,7 @@ Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColo
     unsigned int width,height;
 
     wg_resolve_geometry(geometry,parent,&x,&y,&width,&height);
-    printf("size = %d %d %d %d\n",x,y,width,height);
+
     // create window
     Window parent_window;
     if (parent==NULL)
@@ -95,25 +119,31 @@ Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColo
 
     Window w = XCreateSimpleWindow(display, parent_window,x,y,width,height, 0, NIL, color.pixel);
 
+    // add override_redirect
+	XSetWindowAttributes attributes = { .override_redirect = True };
+	XChangeWindowAttributes(display,w,CWOverrideRedirect,&attributes);
+
     Widget *new_widget =  wg_create_from_x(type,w,parent,geometry);
 
     // add event
     long event_mask = 0;
     switch(type) {
         case wg_decoration:
-            event_mask =  ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask | ButtonReleaseMask |PointerMotionMask;
+            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask | ButtonReleaseMask |PointerMotionMask;
             break;
         case wg_title_bar:
-            event_mask =  ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
             break;
         case wg_button:
-            event_mask =  ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask;
+            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask;
             break;
         default:
-            event_mask =  ExposureMask | EnterWindowMask | LeaveWindowMask | ButtonPressMask;
+            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask;
 
     }
     XSelectInput(display, new_widget->w , event_mask );
+
+    XDefineCursor(display, new_widget->w, xcursors[0]);
 
     // map window
     XMapWindow(display, new_widget->w);
@@ -121,6 +151,37 @@ Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColo
     return new_widget;
 }
 
+// recursively destroy a widget and is childs
+void wg_destroy(Widget *widget) {
+
+    // find childs
+    Window root,parent;
+    Window *children;
+    unsigned int nchildren;
+    XQueryTree(display, widget->w, &root, &parent, &children, &nchildren);
+
+    if (nchildren==0) {
+        // no more children destroy the widget
+
+        // first destroy the x window
+        XDestroyWindow(display,widget->w);
+
+        // then the widget
+        if (widget->text) free(widget->text);
+        tdelete(widget,&widget_list,widget_cmp);
+        free(widget);
+    }
+
+    for(unsigned int i=0; i<nchildren; i ++) {
+        Widget *child=wg_find_from_window(children[i]);
+        if (!child) continue;
+        wg_destroy(child);
+    }
+
+    if (children) XFree(children);
+
+
+}
 
 Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *geometry) {
 
@@ -131,9 +192,11 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->type=type;
     widget->text = NULL;
     widget->bmp = 0;
+    widget->on_click = NULL;
+    widget->on_motion = NULL;
     memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
     printf("create_window %d %d\n",(int)w,type);
-    printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
+    //printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
     // save widget into list
     tsearch(widget,&widget_list,widget_cmp);
 
@@ -266,7 +329,7 @@ void draw_widget_decoration(Widget *wg) {
     int x,y;
     unsigned int width,height,border,depth;
     XGetGeometry(display,wg->w,&root_window,&x,&y,&width,&height,&border,&depth);
-    printf ("x=%d, y=%d, w=%d, h=%d,border=%d\n",x,y,width,height,border);
+    //printf ("x=%d, y=%d, w=%d, h=%d,border=%d\n",x,y,width,height,border);
 
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
@@ -302,11 +365,6 @@ void create_window_decoration(Window window) {
     XConfigureWindow(display,window,CWBorderWidth,&changes);
 
     // get  window size
-    /*Window root_window;
-    int x,y;
-    unsigned int width,height,border,depth;
-    XGetGeometry(display,window,&root_window,&x,&y,&width,&height,&border,&depth);
-    printf ("x=%d, y=%d, w=%d, h=%d,border=%d\n",x,y,width,height,border);*/
     XWindowAttributes deco_attrs;
     XGetWindowAttributes(display,window,&deco_attrs);
 
@@ -358,6 +416,14 @@ void create_window_decoration(Window window) {
     WgGeometry window_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN_TOP, .width=-1, .height=-1, .bottom=DECORATION_MARGIN, .right=DECORATION_MARGIN };
     wg_create_from_x(wg_x11,window,decoration,&window_geom);
 
+    // add events
+    decoration->on_motion = &on_motion_decoration;
+    decoration->on_click = &on_click_decoration;
+    title_bar->on_click = &on_click_title_bar;
+    close_button->on_click = &on_click_close;
+    iconify_button->on_click = &on_click_iconify;
+    full_button->on_click = &on_click_full;
+
     // Add to SaveSet
     XAddToSaveSet(display,window);
 
@@ -384,32 +450,29 @@ Widget *wg_find_from_window(Window w) {
 
 }
 
+
 void on_expose_event(XExposeEvent e) {
 
     // find widget in widget list
     Widget *widget = wg_find_from_window(e.window);
-
-    if (widget==NULL) { // not found
-        printf("Widget not found\n");
-        return;
-    }
+    if (!widget) return;
 
     switch(widget->type) {
     case wg_decoration:
         draw_widget_decoration(widget);
-        printf("decoration\n");
+        //printf("decoration\n");
 
         break;
 
     case wg_title_bar:
         draw_widget_title_bar(widget);
-        printf("title_bar\n");
+        //printf("title_bar\n");
 
         break;
 
     case wg_button:
         draw_widget_button(widget);
-        printf("title_bar\n");
+        //printf("title_bar\n");
 
         break;
 
@@ -421,7 +484,32 @@ void on_expose_event(XExposeEvent e) {
 
 }
 
-void onclick_title_bar(XButtonPressedEvent e) {
+
+// Widget events
+// **************
+
+// display one of 8 resize cursors when the mouse is on the edge of a decoration window
+void on_motion_decoration(XMotionEvent e) {
+
+    int x = e.x;
+    int y = e.y;
+    int position = 0;
+
+    //get decoration size
+    XWindowAttributes deco_attrs;
+    XGetWindowAttributes(display,e.window,&deco_attrs);
+
+    if (x<DECORATION_MARGIN_TOP) position |= west;
+    if (x>(deco_attrs.width-DECORATION_MARGIN_TOP)) position |= east;
+    if (y<DECORATION_MARGIN_TOP) position |= north;
+    if (y>(deco_attrs.height-DECORATION_MARGIN_TOP)) position |= south;
+
+    XDefineCursor(display, e.window, xcursors[position]);
+
+}
+
+// move a window
+void on_click_title_bar(XButtonPressedEvent e) {
 
     Window w = e.window;
 
@@ -472,27 +560,125 @@ void onclick_title_bar(XButtonPressedEvent e) {
 
 }
 
+// resize a window
+void on_click_decoration(XButtonPressedEvent e) {
+
+    Window w = e.window;
+
+    Widget *decoration = wg_find_from_window(w);
+    if (!decoration) return;
+
+    // get initial mouse_position
+    int x_mouse_init = e.x_root;
+    int y_mouse_init = e.y_root;
+
+    // get initial decoration window position
+    XWindowAttributes window_init_attrs;
+    XGetWindowAttributes(display,decoration->w,&window_init_attrs);
+    int width_window_init = window_init_attrs.width;
+    int height_window_init = window_init_attrs.height;
+    int x_window_init = window_init_attrs.x;
+    int y_window_init = window_init_attrs.y;
+
+    // get resize type
+    int position = 0;
+    if (e.x<DECORATION_MARGIN_TOP) position |= west;
+    if (e.x>(width_window_init-DECORATION_MARGIN_TOP)) position |= east;
+    if (e.y<DECORATION_MARGIN_TOP) position |= north;
+    if (e.y>(height_window_init-DECORATION_MARGIN_TOP)) position |= south;
+
+    // sub event-loop, exits when button mouse is released
+    XEvent event;
+    Bool resizing = True;
+    int x_mouse_current,y_mouse_current,new_x,new_y,new_width,new_height,resize_dir_x,resize_dir_y;
+    while (resizing) {
+        XNextEvent(display, &event);
+
+        switch (event.type) {
+            case ButtonRelease:
+                resizing = False;
+                break;
+
+            case MotionNotify:
+                x_mouse_current = event.xmotion.x_root;
+                y_mouse_current = event.xmotion.y_root;
+
+                new_width = width_window_init;
+                new_height = height_window_init;
+                new_x = x_window_init;
+                new_y = y_window_init;
+                resize_dir_x= 1;
+                resize_dir_y= 1;
+
+                // calculate the new location and size of the window
+                if (position&north) { new_y+= y_mouse_current - y_mouse_init; resize_dir_y=-1; }
+                if (position&west) { new_x+= x_mouse_current - x_mouse_init; resize_dir_x=-1; }
+                if (position&(north|south)) new_height+=(y_mouse_current - y_mouse_init)*resize_dir_y;
+                if (position&(west|east)) new_width+=(x_mouse_current - x_mouse_init)*resize_dir_x;
+
+                //  minimum width and height
+                if (new_width<=2*DECORATION_MARGIN+16) new_width=2*DECORATION_MARGIN+16;
+                if (new_height<=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16) new_height=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16;
+
+                // move and resize if needed
+                if ((new_width!=width_window_init)||(new_height!=height_window_init)) wg_resize(decoration, new_width, new_height);
+                if ((new_x!=x_window_init)||(new_y!=y_window_init)) wg_move(decoration, new_x, new_y);
+
+                while (XCheckTypedEvent(display, MotionNotify, &event));
+
+                break;
+
+            case Expose:
+                on_expose_event(event.xexpose);
+                break;
+        }
+
+    }
+}
+
+void on_click_close(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+void on_click_iconify(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+void on_click_full(XButtonPressedEvent e) {
+
+    Widget *button = wg_find_from_window(e.window);
+    if (!button) return;
+
+    printf("Not implemented yet.\n");
+}
+
+// generic events handlers
+// ************************
+
 void on_buttonpress_event(XButtonPressedEvent e) {
 
     Widget *widget = wg_find_from_window(e.window);
+    if (!widget) return;
 
-    if (widget==NULL) { // not found
-        printf("Widget not found\n");
-        return;
-    }
-
-    switch(widget->type) {
-
-    case wg_title_bar:
-        onclick_title_bar(e);
-        break;
-    default:
-        break;
-
-    }
-
-
+    if (widget->on_click) widget->on_click(e);
 }
+
+void on_motion_event(XMotionEvent e) {
+
+    Widget *widget = wg_find_from_window(e.window);
+    if (!widget) return;
+
+    if (widget->on_motion) widget->on_motion(e);
+}
+
 
 
 void reparent_root_windows() {
@@ -510,6 +696,32 @@ void reparent_root_windows() {
     // reparent windows
     for(i=0, child=children; i<nchildren; i ++,child++) {
         create_window_decoration(*child);
+    }
+
+    if (children) XFree(children);
+
+    // ungrap display
+    XUngrabServer(display);
+
+}
+
+void wg_destroy_all() {
+
+    // grap display during reparenting
+    XGrabServer(display);
+
+    //find root windows
+    Window root_return,parent;
+    Window *children,*child;
+    unsigned int nchildren=0,i;
+    Window root = RootWindow(display, screen_num);
+    XQueryTree(display, root, &root_return, &parent, &children, &nchildren);
+
+    // reparent windows
+    for(i=0, child=children; i<nchildren; i ++,child++) {
+        Widget *wg = wg_find_from_window(*child);
+        if (!wg) continue;
+        wg_destroy(wg);
     }
 
     if (children) XFree(children);
@@ -537,23 +749,26 @@ void main_event_loop() {
             if (event.xmap.override_redirect == False) {
                 printf("MapNotify %d\n",event.xmap.override_redirect);
                 create_window_decoration(event.xmap.window);
-            }
+           }
             break;
 
         case Expose:
-            printf("Expose event x=%d,y=%d,w=%d,h=%d,count=%d\n",
-                   event.xexpose.x,event.xexpose.y,event.xexpose.width,event.xexpose.height,event.xexpose.count);
+           /* printf("Expose event x=%d,y=%d,w=%d,h=%d,count=%d\n",
+                   event.xexpose.x,event.xexpose.y,event.xexpose.width,event.xexpose.height,event.xexpose.count);*/
             on_expose_event(event.xexpose);
             break;
 
-        case EnterNotify:
+        /*case EnterNotify:
             printf("Enter event\n");
-            //enter_decoration(event.xcrossing.window,event.xcrossing.x,event.xcrossing.y);
-            break;
 
-        case LeaveNotify:
+            break;*/
+
+       /* case LeaveNotify:
             printf("Leave event\n");
-            //leave_decoration(event.xcrossing.window);
+            break;*/
+
+        case MotionNotify:
+            on_motion_event(event.xmotion);
             break;
 
 
