@@ -43,3 +43,12 @@ For version 0.1 :
 * implement close/fullscren buttons
 * general bugfix
 
+For version 0.2 :
+
+* implement Iconify (a taskbar will be needed ...)
+
+After version 0.2 :
+
+* ICCCM compliance
+* EWMH compliance
+
