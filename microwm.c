@@ -197,6 +197,7 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->type=type;
     widget->text = NULL;
     widget->bmp = 0;
+	widget->wm_window = NULL;
     widget->on_click = NULL;
     widget->on_motion = NULL;
     memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
@@ -385,11 +386,20 @@ void create_window_decoration(Window window) {
     if(deco_x<0) deco_x=0;
     if(deco_y<0) deco_y=0;
 
+    // create WmWindow
+    WmWindow *wm_window = (WmWindow *)malloc(sizeof(WmWindow));
+    wm_window->state=wm_normal;
+    wm_window->x=deco_x;
+    wm_window->y=deco_y;
+    wm_window->width=deco_w;
+    wm_window->height=deco_h;
+
     // decoration frame
     WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 };
 
     Widget *decoration = create_widget(wg_decoration, NULL,
                                        &frame_geom,xcolors[col_normal]);
+
 
     // add title bar
     int title_height=DECORATION_MARGIN_TOP-DECORATION_MARGIN;
@@ -430,6 +440,10 @@ void create_window_decoration(Window window) {
     close_button->on_click = &on_click_close;
     iconify_button->on_click = &on_click_iconify;
     full_button->on_click = &on_click_full;
+
+    // link to WmWindow
+    full_button->wm_window = wm_window;
+
 
     // Add to SaveSet
     XAddToSaveSet(display,window);
@@ -664,7 +678,45 @@ void on_click_full(XButtonPressedEvent e) {
     Widget *button = wg_find_from_window(e.window);
     if (!button) return;
 
-    printf("Not implemented yet.\n");
+	WmWindow *wm_window = button->wm_window;
+	if (!wm_window) return;
+
+	// maximized to normal window
+	if (wm_window->state == wm_maximized) {
+		wg_resize(button->parent->parent,wm_window->width,wm_window->height);
+		wg_move(button->parent->parent,wm_window->x,wm_window->y);	
+
+		wm_window->state = wm_normal;
+
+		return;
+	} 
+
+	// normal to maximized window
+	if (wm_window->state == wm_normal) {
+		// get root window size
+		Window root = RootWindow(display, screen_num);
+	    XWindowAttributes root_attrs;
+	    XGetWindowAttributes(display,root,&root_attrs);
+
+		// get decoration window size
+		Window decoration = button->parent->parent->w;
+	    XWindowAttributes deco_attrs;
+	    XGetWindowAttributes(display,decoration,&deco_attrs);
+
+		wm_window->x = deco_attrs.x;
+		wm_window->y = deco_attrs.y;
+		wm_window->width = deco_attrs.width;
+		wm_window->height = deco_attrs.height;
+
+		wg_move(button->parent->parent,root_attrs.x,root_attrs.y);
+		wg_resize(button->parent->parent,root_attrs.width,root_attrs.height);
+		
+		wm_window->state = wm_maximized;	
+
+		return;
+	}
+
+    
 }
 
 // generic events handlers

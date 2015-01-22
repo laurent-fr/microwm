@@ -27,11 +27,19 @@ enum  {
     bm_iconify
 } ;
 
-/*
-struct wm_window {
+typedef enum {
+    wm_normal,
+    wm_maximized,
+    wm_icon
+} wm_state;
 
-}
-*/
+typedef struct {
+    int x;
+    int y;
+    unsigned int width;
+    unsigned int height;
+    wm_state state;
+} WmWindow;
 
 
 typedef struct {
@@ -51,6 +59,7 @@ typedef struct Widget_s {
     WgGeometry geom;
     int bmp;
     char *text;
+    WmWindow *wm_window;
     void (*on_click)(XButtonPressedEvent);
     void (*on_motion)(XMotionEvent);
 } Widget ;

@@ -40,7 +40,11 @@ For version 0.1 :
 
 * cleanup on exit
 * check windows hints when resizing window
-* implement close/fullscren buttons
+* implement close button
+* maximized window should not be resizeable
+* change button icon on maximized window
+* raise a window by clicking anywhere 
+* raise a window on resize
 * general bugfix
 
 For version 0.2 :
