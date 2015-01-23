@@ -393,6 +393,7 @@ void create_window_decoration(Window window) {
     wm_window->y=deco_y;
     wm_window->width=deco_w;
     wm_window->height=deco_h;
+	wm_window->w = window;
 
     // decoration frame
     WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 };
@@ -431,7 +432,7 @@ void create_window_decoration(Window window) {
 
     // the x11 window itself
     WgGeometry window_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN_TOP, .width=-1, .height=-1, .bottom=DECORATION_MARGIN, .right=DECORATION_MARGIN };
-    wg_create_from_x(wg_x11,window,decoration,&window_geom);
+    Widget *xclient = wg_create_from_x(wg_x11,window,decoration,&window_geom);
 
     // add events
     decoration->on_motion = &on_motion_decoration;
@@ -440,9 +441,10 @@ void create_window_decoration(Window window) {
     close_button->on_click = &on_click_close;
     iconify_button->on_click = &on_click_iconify;
     full_button->on_click = &on_click_full;
+	xclient->on_unmap = &on_unmap_xclient;
 
     // link to WmWindow
-    full_button->wm_window = wm_window;
+    decoration->wm_window = wm_window;
 
 
     // Add to SaveSet
@@ -529,13 +531,14 @@ void on_motion_decoration(XMotionEvent e) {
 
 }
 
+
+// destroy decoration
+void on_unmap_xclient(Widget *decoration,XUnmapEvent e) {
+	printf("Unmap xclient\n");
+}
+
 // move a window
-void on_click_title_bar(XButtonPressedEvent e) {
-
-    Window w = e.window;
-
-    Widget *title_bar = wg_find_from_window(w);
-    if (!title_bar) return;
+void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
     // raise window
     XRaiseWindow(display, title_bar->parent->w);
@@ -582,12 +585,7 @@ void on_click_title_bar(XButtonPressedEvent e) {
 }
 
 // resize a window
-void on_click_decoration(XButtonPressedEvent e) {
-
-    Window w = e.window;
-
-    Widget *decoration = wg_find_from_window(w);
-    if (!decoration) return;
+void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
 
     // get initial mouse_position
     int x_mouse_init = e.x_root;
@@ -657,28 +655,39 @@ void on_click_decoration(XButtonPressedEvent e) {
     }
 }
 
-void on_click_close(XButtonPressedEvent e) {
+void on_click_close(Widget *button,XButtonPressedEvent e) {
 
-    Widget *button = wg_find_from_window(e.window);
-    if (!button) return;
+    Window window = button->parent->parent->wm_window->w;
+
+	// send WM_DELETE_WINDOW to X client
+	XEvent ev;
+	memset(&ev, 0, sizeof (ev));
+
+	ev.xclient.type = ClientMessage;
+	ev.xclient.window = window;
+	ev.xclient.message_type = XInternAtom(display, "WM_PROTOCOLS", True);
+	ev.xclient.format = 32;
+	ev.xclient.data.l[0] = XInternAtom(display, "WM_DELETE_WINDOW", False);
+	ev.xclient.data.l[1] = CurrentTime;
+	XSendEvent(display, window, False, NoEventMask, &ev);
+	
+
+	// TODO : call XKillClient if the client is still there.
+
+
+}
+
+void on_click_iconify(Widget *button,XButtonPressedEvent e) {
+
 
     printf("Not implemented yet.\n");
 }
 
-void on_click_iconify(XButtonPressedEvent e) {
+void on_click_full(Widget *button,XButtonPressedEvent e) {
 
-    Widget *button = wg_find_from_window(e.window);
-    if (!button) return;
 
-    printf("Not implemented yet.\n");
-}
 
-void on_click_full(XButtonPressedEvent e) {
-
-    Widget *button = wg_find_from_window(e.window);
-    if (!button) return;
-
-	WmWindow *wm_window = button->wm_window;
+	WmWindow *wm_window = button->parent->parent->wm_window;
 	if (!wm_window) return;
 
 	// maximized to normal window
@@ -727,7 +736,7 @@ void on_buttonpress_event(XButtonPressedEvent e) {
     Widget *widget = wg_find_from_window(e.window);
     if (!widget) return;
 
-    if (widget->on_click) widget->on_click(e);
+    if (widget->on_click) widget->on_click(widget,e);
 }
 
 void on_motion_event(XMotionEvent e) {
@@ -738,6 +747,13 @@ void on_motion_event(XMotionEvent e) {
     if (widget->on_motion) widget->on_motion(e);
 }
 
+void on_unmap_event(XUnmapEvent e) {
+
+	Widget *widget = wg_find_from_window(e.window);
+    if (!widget) return;
+
+	if (widget->on_unmap) widget->on_unmap(widget,e);
+}
 
 
 void reparent_root_windows() {
@@ -816,6 +832,16 @@ void main_event_loop() {
                    event.xexpose.x,event.xexpose.y,event.xexpose.width,event.xexpose.height,event.xexpose.count);*/
             on_expose_event(event.xexpose);
             break;
+
+		case UnmapNotify:
+			printf("Unmap event\n");
+			on_unmap_event(event.xunmap);
+			break;
+
+		case DestroyNotify:
+			printf("Destroy event\n");
+			break;
+
 
         /*case EnterNotify:
             printf("Enter event\n");
