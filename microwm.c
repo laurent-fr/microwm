@@ -5,6 +5,7 @@
 #include "microwm.h"
 #include "bitmap/close.xpm"
 #include "bitmap/full.xpm"
+#include "bitmap/unfull.xpm"
 #include "bitmap/iconify.xpm"
 
 // globals
@@ -196,10 +197,11 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->parent=parent;
     widget->type=type;
     widget->text = NULL;
-    widget->bmp = 0;
+    widget->xpm = NULL;
 	widget->wm_window = NULL;
     widget->on_click = NULL;
     widget->on_motion = NULL;
+    widget->on_unmap = NULL;
     memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
     printf("create_window %d %d\n",(int)w,type);
     //printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
@@ -306,19 +308,7 @@ void draw_widget_button(Widget *wg) {
     XImage *image,*shapeimage;
     static XpmAttributes attributes;
 
-    char **xpm;
-    switch(wg->bmp) {
-    case bm_close:
-        xpm = close_xpm;
-        break;
-    case bm_full:
-        xpm = full_xpm;
-        break;
-    case bm_iconify:
-        xpm = iconify_xpm;
-        break;
-    }
-    XpmCreateImageFromData(display,xpm,&image,&shapeimage,&attributes);
+    XpmCreateImageFromData(display,wg->xpm,&image,&shapeimage,&attributes);
 
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
@@ -418,17 +408,17 @@ void create_window_decoration(Window window) {
     Widget *close_button = create_widget(wg_button,title_bar,
                                          &close_geom,xcolors[col_normal]);
 
-    close_button->bmp = bm_close;
+    close_button->xpm = close_xpm;
 
     WgGeometry full_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=0 };
     Widget *full_button = create_widget(wg_button,title_bar,
                                         &full_geom,xcolors[col_normal]);
-    full_button->bmp = bm_full;
+    full_button->xpm = full_xpm;
 
     WgGeometry iconify_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
     Widget *iconify_button = create_widget(wg_button,title_bar,
                                            &iconify_geom,xcolors[col_normal]);
-    iconify_button->bmp = bm_iconify;
+    iconify_button->xpm = iconify_xpm;
 
     // the x11 window itself
     WgGeometry window_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN_TOP, .width=-1, .height=-1, .bottom=DECORATION_MARGIN, .right=DECORATION_MARGIN };
@@ -670,7 +660,7 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 	ev.xclient.data.l[0] = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	ev.xclient.data.l[1] = CurrentTime;
 	XSendEvent(display, window, False, NoEventMask, &ev);
-	
+
 
 	// TODO : call XKillClient if the client is still there.
 
@@ -685,20 +675,24 @@ void on_click_iconify(Widget *button,XButtonPressedEvent e) {
 
 void on_click_full(Widget *button,XButtonPressedEvent e) {
 
-
-
 	WmWindow *wm_window = button->parent->parent->wm_window;
 	if (!wm_window) return;
 
+	// raise window
+    XRaiseWindow(display, button->parent->parent->w);
+
 	// maximized to normal window
 	if (wm_window->state == wm_maximized) {
+
+        button->xpm = full_xpm;
+
 		wg_resize(button->parent->parent,wm_window->width,wm_window->height);
-		wg_move(button->parent->parent,wm_window->x,wm_window->y);	
+		wg_move(button->parent->parent,wm_window->x,wm_window->y);
 
 		wm_window->state = wm_normal;
 
 		return;
-	} 
+	}
 
 	// normal to maximized window
 	if (wm_window->state == wm_normal) {
@@ -717,15 +711,17 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 		wm_window->width = deco_attrs.width;
 		wm_window->height = deco_attrs.height;
 
+        button->xpm = unfull_xpm ;
+
 		wg_move(button->parent->parent,root_attrs.x,root_attrs.y);
 		wg_resize(button->parent->parent,root_attrs.width,root_attrs.height);
-		
-		wm_window->state = wm_maximized;	
+
+		wm_window->state = wm_maximized;
 
 		return;
 	}
 
-    
+
 }
 
 // generic events handlers

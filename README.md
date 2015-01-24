@@ -42,7 +42,6 @@ For version 0.1 :
 * check windows hints when resizing window
 * implement close button
 * maximized window should not be resizeable
-* change button icon on maximized window
 * raise a window by clicking anywhere 
 * raise a window on resize
 * general bugfix

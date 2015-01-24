@@ -58,7 +58,7 @@ typedef struct Widget_s {
     struct Widget_s *parent;
     widget_type type;
     WgGeometry geom;
-    int bmp;
+    char **xpm;
     char *text;
     WmWindow *wm_window;
     void (*on_click)(struct Widget_s *,XButtonPressedEvent);
