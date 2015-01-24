@@ -68,6 +68,7 @@ enum {
     col_dark,
     col_normal,
     col_title,
+    col_title_focus,
     col_count
 };
 

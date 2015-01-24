@@ -17,7 +17,7 @@ Colormap colormap;
 
 
 XColor xcolors[col_count];
-char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333"};
+char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#ff6600"};
 
 // cursors
 #define NB_CURSOR 11
@@ -156,6 +156,10 @@ void create_window_decoration(Window window) {
     // reparent window into decoration
     XReparentWindow(display,window,decoration->w,DECORATION_MARGIN,DECORATION_MARGIN_TOP);
 
+    XMapWindow(display,decoration->w);
+    XMapSubwindows(display,decoration->w);
+    XMapSubwindows(display,title_bar->w);
+
     XFlush(display);
 
 }
@@ -188,8 +192,22 @@ void on_motion_decoration(Widget *decoration, XMotionEvent e) {
 
 
 // destroy decoration
-void on_unmap_xclient(Widget *decoration,XUnmapEvent e) {
-	printf("Unmap xclient\n");
+void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
+
+	Widget *decoration = xclient->parent;
+	if (!decoration) { printf("No decoration\n"); return; }
+
+	if (e.event == DefaultRootWindow(display))
+        return;
+
+    printf("Unmap xclient\n");
+
+    //XReparentWindow(display,e.window,RootWindow(display, screen_num),0,0 );
+    //XRemoveFromSaveSet(display,e.window);
+
+    wg_destroy(decoration);
+
+
 }
 
 // move a window
@@ -242,7 +260,7 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
                 wg_move(title_bar->parent,new_x,new_y);
 
-                while (XCheckTypedEvent(display, MotionNotify, &event));
+                //while (XCheckTypedEvent(display, MotionNotify, &event));
 
                 break;
 
@@ -321,7 +339,7 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
                 if ((new_width!=width_window_init)||(new_height!=height_window_init)) wg_resize(decoration, new_width, new_height);
                 if ((new_x!=x_window_init)||(new_y!=y_window_init)) wg_move(decoration, new_x, new_y);
 
-                while (XCheckTypedEvent(display, MotionNotify, &event));
+                //while (XCheckTypedEvent(display, MotionNotify, &event));
 
                 break;
 
@@ -348,7 +366,10 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 	Bool has_wm_delete_window = False;
     for (int i=0,protocol=*protocols;i<protocols_count;i ++,protocol++) {
         //printf("Atom: %s\n",XGetAtomName(display,protocol));
-        if (!strcmp(XGetAtomName(display,protocol),"WM_DELETE_WINDOW")) { has_wm_delete_window = True ; break ;}
+        char *name = XGetAtomName(display,protocol);
+        int result = strcmp(name,"WM_DELETE_WINDOW");
+        XFree(name);
+        if (!result) { has_wm_delete_window = True ; break ;}
     }
 	XFree(protocols);
 
@@ -461,6 +482,20 @@ void on_unmap_event(XUnmapEvent e) {
 	if (widget->on_unmap) widget->on_unmap(widget,e);
 }
 
+void on_configure_request(XConfigureRequestEvent e) {
+
+    XWindowChanges changes;
+
+    changes.x = e.x;
+    changes.y = e.y;
+    changes.width = e.width;
+    changes.height = e.height;
+    changes.border_width=0;
+
+    XConfigureWindow(display,e.window, CWX|CWY|CWWidth| CWHeight|CWBorderWidth ,&changes);
+
+}
+
 
 void reparent_root_windows() {
 
@@ -494,7 +529,7 @@ void main_event_loop() {
 
     // select events
     Window root = RootWindow(display, screen_num);
-    XSelectInput(display, root , SubstructureNotifyMask);
+    XSelectInput(display, root , SubstructureRedirectMask | SubstructureNotifyMask );
 
     while (1) {
         /* Wait for an event */
@@ -502,10 +537,19 @@ void main_event_loop() {
 
         switch (event.type) {
         case MapNotify:
-            if (event.xmap.override_redirect == False) {
+           // if (event.xmap.override_redirect == False) {
                 printf("MapNotify %d\n",event.xmap.override_redirect);
-                create_window_decoration(event.xmap.window);
-           }
+            //    create_window_decoration(event.xmap.window);
+          // }
+            break;
+
+        case MapRequest:
+            printf("Map Request\n");
+            create_window_decoration(event.xmaprequest.window);
+            break;
+
+        case ConfigureRequest:
+            on_configure_request(event.xconfigurerequest);
             break;
 
         case Expose:

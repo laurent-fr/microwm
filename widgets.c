@@ -82,7 +82,7 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
     long event_mask = 0;
     switch(type) {
         case wg_decoration:
-            event_mask =  ExposureMask | ButtonPressMask | ButtonReleaseMask |PointerMotionMask;
+            event_mask =  ExposureMask | ButtonPressMask | ButtonReleaseMask |PointerMotionMask | SubstructureRedirectMask | SubstructureNotifyMask;
             new_widget->on_expose = &draw_widget_decoration;
             break;
         case wg_title_bar:
@@ -103,7 +103,7 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
     XDefineCursor(display, new_widget->w, xcursors[0]);
 
     // map window
-    XMapWindow(display, new_widget->w);
+    //XMapWindow(display, new_widget->w);
 
     return new_widget;
 }
@@ -111,29 +111,34 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
 // recursively destroy a widget and is childs
 void wg_destroy(Widget *widget) {
 
+    printf("wg_destroy %d\n",widget->type);
+
     // find childs
     Window root,parent;
     Window *children;
     unsigned int nchildren;
     XQueryTree(display, widget->w, &root, &parent, &children, &nchildren);
 
-    if (nchildren==0) {
-        // no more children destroy the widget
-
-        // first destroy the x window
-        XDestroyWindow(display,widget->w);
-
-        // then the widget
-        if (widget->text) free(widget->text);
-        tdelete(widget,&widget_list,widget_cmp);
-        free(widget);
-    }
-
     for(unsigned int i=0; i<nchildren; i ++) {
         Widget *child=wg_find_from_window(children[i]);
         if (!child) continue;
         wg_destroy(child);
     }
+
+printf("Destroy widget %d\n",widget->type);
+         // first destroy the x window
+        if (widget->type != wg_x11) {
+                XUnmapWindow(display,widget->w);
+                XDestroyWindow(display,widget->w);
+        }
+
+        // then the widget
+        if (widget->text) free(widget->text);
+        if (widget->wm_window) free (widget->wm_window);
+
+        tdelete(widget,&widget_list,widget_cmp);
+        free(widget);
+
 
     if (children) XFree(children);
 
@@ -213,9 +218,9 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
                              XFT_SIZE, XftTypeDouble, 8.0,
                              NULL);
 
-        rcolor_fg.red  = xcolors[col_title].red;
-        rcolor_fg.green=xcolors[col_title].green;
-        rcolor_fg.blue =xcolors[col_title].blue;
+        rcolor_fg.red  = xcolors[col_title_focus].red;
+        rcolor_fg.green=xcolors[col_title_focus].green;
+        rcolor_fg.blue =xcolors[col_title_focus].blue;
         rcolor_fg.alpha=65535;
         XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor_fg,&fcolor_fg);
 
@@ -246,6 +251,8 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
         XftDrawString8(xftdraw, &fcolor_fg, font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
 
     }
+
+    XftDrawDestroy(xftdraw);
     XFlush(display);
 
 }
