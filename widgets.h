@@ -57,8 +57,9 @@ typedef struct Widget_s {
     char *text;
     WmWindow *wm_window;
     void (*on_click)(struct Widget_s *,XButtonPressedEvent);
-    void (*on_motion)(XMotionEvent);
+    void (*on_motion)(struct Widget_s *,XMotionEvent);
 	void (*on_unmap)(struct Widget_s *,XUnmapEvent);
+	void (*on_expose)(struct Widget_s *,XExposeEvent);
 } Widget ;
 
 // colors
@@ -70,20 +71,24 @@ enum {
     col_count
 };
 
+int widget_cmp(const void *wg1,const void *wg2);
+
 void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height);
 Widget *wg_find_from_window(Window w);
 
-Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
+Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
 Widget *wg_create_from_x(widget_type,Window w,Widget *parent,WgGeometry *geometry);
+
+void wg_destroy(Widget *widget);
 
 void wg_move(Widget *wg,int new_x, int new_y);
 void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height);
 
 void wg_destroy_all();
 
-void draw_widget_button(Widget *wg);
-void draw_widget_title_bar(Widget *wg);
-void draw_widget_decoration(Widget *wg);
+void draw_widget_button(Widget *wg,XExposeEvent e);
+void draw_widget_title_bar(Widget *wg,XExposeEvent e);
+void draw_widget_decoration(Widget *wg,XExposeEvent e);
 
 
 

@@ -10,8 +10,6 @@ void int_handler() {
 
 int main(int ARGC, char *ARGV[]) {
 
-    // connect to X server
-    connect_x_server();
     // register ctrl+c
     //signal(SIGINT, int_handler);
 

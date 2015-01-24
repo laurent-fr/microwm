@@ -82,7 +82,6 @@ void create_window_decoration(Window window) {
     XWindowAttributes deco_attrs;
     XGetWindowAttributes(display,window,&deco_attrs);
 
-
     // create decoration
     int deco_x=deco_attrs.x-DECORATION_MARGIN;
     int deco_y=deco_attrs.y-DECORATION_MARGIN_TOP;
@@ -101,57 +100,55 @@ void create_window_decoration(Window window) {
     wm_window->height=deco_h;
 	wm_window->w = window;
 
-    // decoration frame
+    // add decoration frame
     WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 };
 
-    Widget *decoration = create_widget(wg_decoration, NULL,
+    Widget *decoration = wg_create(wg_decoration, NULL,
                                        &frame_geom,xcolors[col_normal]);
 
+    decoration->on_motion = &on_motion_decoration;
+    decoration->on_click = &on_click_decoration;
+    decoration->wm_window = wm_window;
 
     // add title bar
     int title_height=DECORATION_MARGIN_TOP-DECORATION_MARGIN;
     WgGeometry title_bar_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN-1, .width=-1, .height=title_height, .bottom=-1, .right=DECORATION_MARGIN };
-    Widget *title_bar = create_widget(wg_title_bar, decoration,
+    Widget *title_bar = wg_create(wg_title_bar, decoration,
                                       &title_bar_geom,xcolors[col_normal]);
 
-    // get window title
+    title_bar->on_click = &on_click_title_bar;
     get_window_name(window,&(title_bar->text));
-    printf("name=%s\n",title_bar->text);
 
-    // add buttons
+    // add close button
     int button_width=title_height-1;
     WgGeometry close_geom = { .left=0, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=-1 };
-    Widget *close_button = create_widget(wg_button,title_bar,
+    Widget *close_button = wg_create(wg_button,title_bar,
                                          &close_geom,xcolors[col_normal]);
 
     close_button->xpm = close_xpm;
+    close_button->on_click = &on_click_close;
 
+    // add maximize button
     WgGeometry full_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=0 };
-    Widget *full_button = create_widget(wg_button,title_bar,
+    Widget *full_button = wg_create(wg_button,title_bar,
                                         &full_geom,xcolors[col_normal]);
-    full_button->xpm = full_xpm;
 
+    full_button->xpm = full_xpm;
+    full_button->on_click = &on_click_full;
+
+    // add iconify button
     WgGeometry iconify_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
-    Widget *iconify_button = create_widget(wg_button,title_bar,
+    Widget *iconify_button = wg_create(wg_button,title_bar,
                                            &iconify_geom,xcolors[col_normal]);
+
     iconify_button->xpm = iconify_xpm;
+    iconify_button->on_click = &on_click_iconify;
 
     // the x11 window itself
     WgGeometry window_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN_TOP, .width=-1, .height=-1, .bottom=DECORATION_MARGIN, .right=DECORATION_MARGIN };
     Widget *xclient = wg_create_from_x(wg_x11,window,decoration,&window_geom);
 
-    // add events
-    decoration->on_motion = &on_motion_decoration;
-    decoration->on_click = &on_click_decoration;
-    title_bar->on_click = &on_click_title_bar;
-    close_button->on_click = &on_click_close;
-    iconify_button->on_click = &on_click_iconify;
-    full_button->on_click = &on_click_full;
-	xclient->on_unmap = &on_unmap_xclient;
-
-    // link to WmWindow
-    decoration->wm_window = wm_window;
-
+    xclient->on_unmap = &on_unmap_xclient;
 
     // Add to SaveSet
     XAddToSaveSet(display,window);
@@ -163,48 +160,14 @@ void create_window_decoration(Window window) {
 
 }
 
-
-
-
-void on_expose_event(XExposeEvent e) {
-
-    // find widget in widget list
-    Widget *widget = wg_find_from_window(e.window);
-    if (!widget) return;
-
-    switch(widget->type) {
-    case wg_decoration:
-        draw_widget_decoration(widget);
-        //printf("decoration\n");
-
-        break;
-
-    case wg_title_bar:
-        draw_widget_title_bar(widget);
-        //printf("title_bar\n");
-
-        break;
-
-    case wg_button:
-        draw_widget_button(widget);
-        //printf("title_bar\n");
-
-        break;
-
-
-    default:
-
-        break;
-    }
-
-}
-
-
 // Widget events
 // **************
 
 // display one of 8 resize cursors when the mouse is on the edge of a decoration window
-void on_motion_decoration(XMotionEvent e) {
+void on_motion_decoration(Widget *decoration, XMotionEvent e) {
+
+    // do nothing if windows is maximized
+    if (decoration->wm_window->state == wm_maximized ) return;
 
     int x = e.x;
     int y = e.y;
@@ -233,7 +196,8 @@ void on_unmap_xclient(Widget *decoration,XUnmapEvent e) {
 void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
     // raise window
-    XRaiseWindow(display, title_bar->parent->w);
+    Widget *decoration = title_bar->parent;
+    XRaiseWindow(display, decoration->w);
 
     // get initial mouse_position
     int x_mouse_init = e.x_root;
@@ -241,14 +205,14 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
     // get initial decoration window position
     XWindowAttributes window_init_attrs;
-    XGetWindowAttributes(display,title_bar->parent->w,&window_init_attrs);
+    XGetWindowAttributes(display,decoration->w,&window_init_attrs);
     int x_window_init = window_init_attrs.x;
     int y_window_init = window_init_attrs.y;
 
     // sub event-loop, exits when button mouse is released
     XEvent event;
     Bool moving = True;
-    int x_mouse_current,y_mouse_current;
+    int x_mouse_current,y_mouse_current,new_x,new_y;
     while (moving) {
         XNextEvent(display, &event);
 
@@ -258,10 +222,25 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
                 break;
 
             case MotionNotify:
+
+                /* // if windows is maximized, set it to normal and update width an height
+                if (decoration->wm_window->state == wm_maximized ) {
+                    decoration->wm_window->state = wm_normal;
+                    wg_resize(decoration,decoration->wm_window->width,decoration->wm_window->height );
+                    // TODO : if mouse is out of the window, move it
+                }*/
+
                 x_mouse_current = event.xmotion.x_root;
                 y_mouse_current = event.xmotion.y_root;
 
-                wg_move(title_bar->parent,x_window_init + x_mouse_current - x_mouse_init ,y_window_init + y_mouse_current - y_mouse_init);
+                new_x = x_window_init + x_mouse_current - x_mouse_init;
+                new_y = y_window_init + y_mouse_current - y_mouse_init;
+
+                //  minimum  values
+                if (new_x<0) new_x=0;
+                if (new_y<0) new_y=0;
+
+                wg_move(title_bar->parent,new_x,new_y);
 
                 while (XCheckTypedEvent(display, MotionNotify, &event));
 
@@ -278,6 +257,11 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
 // resize a window
 void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
+
+    // do nothing if windows is maximized
+    if (decoration->wm_window->state == wm_maximized ) return;
+
+    XRaiseWindow(display, decoration->w);
 
     // get initial mouse_position
     int x_mouse_init = e.x_root;
@@ -327,7 +311,9 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
                 if (position&(north|south)) new_height+=(y_mouse_current - y_mouse_init)*resize_dir_y;
                 if (position&(west|east)) new_width+=(x_mouse_current - x_mouse_init)*resize_dir_x;
 
-                //  minimum width and height
+                //  minimum  values
+                if (new_x<0) new_x=0;
+                if (new_y<0) new_y=0;
                 if (new_width<=2*DECORATION_MARGIN+16) new_width=2*DECORATION_MARGIN+16;
                 if (new_height<=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16) new_height=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16;
 
@@ -355,41 +341,52 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 	XEvent ev;
 	memset(&ev, 0, sizeof (ev));
 
-	ev.xclient.type = ClientMessage;
-	ev.xclient.window = window;
-	ev.xclient.message_type = XInternAtom(display, "WM_PROTOCOLS", True);
-	ev.xclient.format = 32;
-	ev.xclient.data.l[0] = XInternAtom(display, "WM_DELETE_WINDOW", False);
-	ev.xclient.data.l[1] = CurrentTime;
-	XSendEvent(display, window, False, NoEventMask, &ev);
+	// find supported protocols
+    Atom *protocols,*protocol;
+    int protocols_count=0;
+	XGetWMProtocols(display,window,&protocols,&protocols_count);
+	Bool has_wm_delete_window = False;
+    for (int i=0,protocol=*protocols;i<protocols_count;i ++,protocol++) {
+        //printf("Atom: %s\n",XGetAtomName(display,protocol));
+        if (!strcmp(XGetAtomName(display,protocol),"WM_DELETE_WINDOW")) { has_wm_delete_window = True ; break ;}
+    }
+	XFree(protocols);
 
-
-	// TODO : call XKillClient if the client is still there.
-
+    if (has_wm_delete_window == True ) {
+        ev.xclient.type = ClientMessage;
+        ev.xclient.window = window;
+        ev.xclient.message_type = XInternAtom(display, "WM_PROTOCOLS", True);
+        ev.xclient.format = 32;
+        ev.xclient.data.l[0] = XInternAtom(display, "WM_DELETE_WINDOW", False);
+        XSendEvent(display, window, False, NoEventMask, &ev);
+    } else {
+        XKillClient(display,window);
+    }
 
 }
 
 void on_click_iconify(Widget *button,XButtonPressedEvent e) {
-
 
     printf("Not implemented yet.\n");
 }
 
 void on_click_full(Widget *button,XButtonPressedEvent e) {
 
-	WmWindow *wm_window = button->parent->parent->wm_window;
-	if (!wm_window) return;
+    Widget *decoration = button->parent->parent;
+    if (!decoration) return;
+	WmWindow *wm_window = decoration->wm_window;
 
 	// raise window
-    XRaiseWindow(display, button->parent->parent->w);
+    XRaiseWindow(display, decoration->w);
 
 	// maximized to normal window
 	if (wm_window->state == wm_maximized) {
 
         button->xpm = full_xpm;
+        //XClearArea(display,button->w,0,0,15,15,True);
 
-		wg_resize(button->parent->parent,wm_window->width,wm_window->height);
-		wg_move(button->parent->parent,wm_window->x,wm_window->y);
+		wg_resize(decoration,wm_window->width,wm_window->height);
+		wg_move(decoration,wm_window->x,wm_window->y);
 
 		wm_window->state = wm_normal;
 
@@ -415,6 +412,8 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 
         button->xpm = unfull_xpm ;
 
+        //XDefineCursor(display, decoration->w, xcursors[0]);
+
 		wg_move(button->parent->parent,root_attrs.x,root_attrs.y);
 		wg_resize(button->parent->parent,root_attrs.width,root_attrs.height);
 
@@ -429,6 +428,15 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 // generic events handlers
 // ************************
 
+void on_expose_event(XExposeEvent e) {
+
+    Widget *widget = wg_find_from_window(e.window);
+    if (!widget) return;
+
+    if (widget->on_expose) widget->on_expose(widget,e);
+}
+
+
 void on_buttonpress_event(XButtonPressedEvent e) {
 
     Widget *widget = wg_find_from_window(e.window);
@@ -442,7 +450,7 @@ void on_motion_event(XMotionEvent e) {
     Widget *widget = wg_find_from_window(e.window);
     if (!widget) return;
 
-    if (widget->on_motion) widget->on_motion(e);
+    if (widget->on_motion) widget->on_motion(widget,e);
 }
 
 void on_unmap_event(XUnmapEvent e) {
@@ -486,9 +494,7 @@ void main_event_loop() {
 
     // select events
     Window root = RootWindow(display, screen_num);
-    XSelectInput(display, root ,
-                 SubstructureRedirectMask |SubstructureNotifyMask);
-
+    XSelectInput(display, root , SubstructureNotifyMask);
 
     while (1) {
         /* Wait for an event */
@@ -523,6 +529,9 @@ void main_event_loop() {
             printf("Button Press event\n");
             on_buttonpress_event(event.xbutton);
             break;
+
+        default:
+            printf("Unhandled event %d\n",event.type);
 
         }
     }

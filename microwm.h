@@ -10,12 +10,6 @@
 
 #include "widgets.h"
 
-
-
-#define DECORATION_MARGIN 4
-#define DECORATION_MARGIN_TOP 20
-
-
 enum {
     north =1,
     south =2,
@@ -37,9 +31,14 @@ void on_click_close(Widget *button,XButtonPressedEvent e);
 void on_click_full(Widget *button,XButtonPressedEvent e);
 void on_click_iconify(Widget *button,XButtonPressedEvent e);
 
-void on_motion_decoration(XMotionEvent e);
+void on_motion_decoration(Widget *decoration,XMotionEvent e);
 
 void on_unmap_xclient(Widget *xclient,XUnmapEvent e);
+
+void on_expose_event(XExposeEvent e);
+void on_buttonpress_event(XButtonPressedEvent e);
+void on_motion_event(XMotionEvent e);
+void on_unmap_event(XUnmapEvent e);
 
 void reparent_root_windows();
 

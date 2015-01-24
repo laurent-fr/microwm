@@ -56,7 +56,7 @@ void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsign
 
 
 
-Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColor color) {
+Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor color) {
 
     int x,y;
     unsigned int width,height;
@@ -82,18 +82,22 @@ Widget *create_widget(widget_type type,Widget *parent,WgGeometry *geometry,XColo
     long event_mask = 0;
     switch(type) {
         case wg_decoration:
-            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask | ButtonReleaseMask |PointerMotionMask;
+            event_mask =  ExposureMask | ButtonPressMask | ButtonReleaseMask |PointerMotionMask;
+            new_widget->on_expose = &draw_widget_decoration;
             break;
         case wg_title_bar:
-            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+            event_mask =  ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+            new_widget->on_expose = &draw_widget_title_bar;
             break;
         case wg_button:
-            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask;
+            event_mask =  ExposureMask | ButtonPressMask;
+            new_widget->on_expose = &draw_widget_button;
             break;
         default:
-            event_mask =  ExposureMask | /*EnterWindowMask | LeaveWindowMask |*/ ButtonPressMask;
+            event_mask =  ExposureMask | ButtonPressMask ;
 
     }
+
     XSelectInput(display, new_widget->w , event_mask );
 
     XDefineCursor(display, new_widget->w, xcursors[0]);
@@ -149,9 +153,10 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->on_click = NULL;
     widget->on_motion = NULL;
     widget->on_unmap = NULL;
+    widget->on_expose = NULL;
     memcpy(&(widget->geom),geometry,sizeof(WgGeometry));
     printf("create_window %d %d\n",(int)w,type);
-    //printf("x=%d y=%d\n",widget->geom.top,widget->geom.left);
+
     // save widget into list
     tsearch(widget,&widget_list,widget_cmp);
 
@@ -193,14 +198,14 @@ void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 // Drawing functions
 // ******************
 
-void draw_widget_title_bar(Widget *wg) {
+void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     if (wg->text == NULL ) return;
 
     static Bool init=False;
     static XftFont *font;
-    static XRenderColor xrcolor;
-    static XftColor xftcolor;
+    static XRenderColor rcolor_fg,rcolor_bg;
+    static XftColor fcolor_fg,fcolor_bg;
     if (!init) {
 
         font =  XftFontOpen (display, screen_num,
@@ -208,11 +213,17 @@ void draw_widget_title_bar(Widget *wg) {
                              XFT_SIZE, XftTypeDouble, 8.0,
                              NULL);
 
-        xrcolor.red  =21111;
-        xrcolor.green=21111;
-        xrcolor.blue =21111;
-        xrcolor.alpha=65535;
-        XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&xrcolor,&xftcolor);
+        rcolor_fg.red  = xcolors[col_title].red;
+        rcolor_fg.green=xcolors[col_title].green;
+        rcolor_fg.blue =xcolors[col_title].blue;
+        rcolor_fg.alpha=65535;
+        XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor_fg,&fcolor_fg);
+
+        rcolor_bg.red  = xcolors[col_normal].red;
+        rcolor_bg.green=xcolors[col_normal].green;
+        rcolor_bg.blue =xcolors[col_normal].blue;
+        rcolor_bg.alpha=65535;
+        XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor_bg,&fcolor_bg);
 
         init = True;
     }
@@ -231,7 +242,8 @@ void draw_widget_title_bar(Widget *wg) {
 
     if (extents.width>0) {
         int left = (window_attrs.width - extents.width)/2;
-        XftDrawString8(xftdraw, &xftcolor, font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
+        XftDrawRect(xftdraw, &fcolor_bg,left,0,extents.width,11);
+        XftDrawString8(xftdraw, &fcolor_fg, font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
 
     }
     XFlush(display);
@@ -250,7 +262,7 @@ void draw_shadow(Window w,GC gc,int x1,int y1,int x2,int y2,XColor nw,XColor se)
 
 }
 
-void draw_widget_button(Widget *wg) {
+void draw_widget_button(Widget *wg,XExposeEvent e) {
 
     XImage *image,*shapeimage;
     static XpmAttributes attributes;
@@ -260,14 +272,19 @@ void draw_widget_button(Widget *wg) {
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
 
+    // clipping
+    //XRectangle rectangle =  { .x=e.x, .y=e.y, .width = e.width, .height = e.height } ;
+    //XSetClipRectangles(display,gc,0,0,&rectangle,1,Unsorted);
+
     XPutImage(display,wg->w,gc,image,0,0,2,2,11,11);
 
     XDestroyImage(image);
     XDestroyImage(shapeimage);
+    XFreeGC(display,gc);
 
 }
 
-void draw_widget_decoration(Widget *wg) {
+void draw_widget_decoration(Widget *wg,XExposeEvent e) {
 
     // get decoration size
     Window root_window;
@@ -278,10 +295,17 @@ void draw_widget_decoration(Widget *wg) {
 
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
+
+    // clipping
+    //XRectangle rectangle =  { .x=e.x, .y=e.y, .width = e.width, .height = e.height } ;
+    //XSetClipRectangles(display,gc,0,0,&rectangle,1,Unsorted);
+
+
     draw_shadow(wg->w,gc,0,0,width-1,height-1,xcolors[col_light],xcolors[col_dark]);
     draw_shadow(wg->w,gc,DECORATION_MARGIN-1,DECORATION_MARGIN_TOP-1,width-DECORATION_MARGIN,height-DECORATION_MARGIN,xcolors[col_dark],xcolors[col_light]);
 
     XFlush(display);
+    XFreeGC(display,gc);
 
 }
 
