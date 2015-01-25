@@ -1,3 +1,20 @@
+// microWM - a microscopic Window Manager
+// Copyright (C) 2015 Laurent FRANCOISE - gihtub_at_diygallery_dot_com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <search.h>
@@ -5,7 +22,7 @@
 #include "widgets.h"
 
 // widgets tree
-void *widget_list = NULL;
+void *widget_list = NULL;  ///< the widget tree (libc tree)
 
 // the X11 display must be declared somewhere
 extern Display *display;
@@ -13,19 +30,44 @@ extern int screen_num;
 
 extern Cursor xcursors[];
 extern XColor xcolors[];
+extern XftFont *_xft_font;
 
 // widgets functions
 // ******************
 
 
 
-// compare function for LIBC trees
+/// \brief compare function for LIBC trees
+///
+/// \param wg1 first widget
+/// \param wg2 second widget
+/// \return difference of widget ids
+///
+/// this compare function is mandatory for libc trees
+///
 int widget_cmp(const void *wg1,const void *wg2) {
     Widget *wwg1=(Widget *)wg1;
     Widget *wwg2=(Widget *)wg2;
     return wwg1->w - wwg2->w;
 }
 
+/// \brief resolve the geometry constraints for a widget
+///
+/// \param geom pointer to a WgGeometry structure
+/// \param the widget containing the widget for which we are calculating the constraints
+/// \param x (output) the x position of the widget (from is parent)
+/// \param y (output) the y position of the widget (from is parent)
+/// \param width (output) the width of the widget
+/// \param height (output) the height of the widget
+///
+/// positive or null values are mandatory contraints, negative values are to be calculated.
+///
+/// * if left,top,width and height are given, the position of the widget is fixed
+/// * if width is negative, left and right are needed (variable width widget)
+/// * if height is negative, top and bottom are needed (variable height widget)
+/// * left and width / top and height : left or top fixed position
+/// * right and width / bottom and width : right or bottom fixed position
+///
 void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsigned int *width, unsigned int *height) {
 
     *x=0;
@@ -55,7 +97,20 @@ void wg_resolve_geometry(WgGeometry *geom, Widget *parent, int *x,int *y, unsign
 }
 
 
-
+/// \brief create a widget
+///
+/// \param type the type of the widget
+/// \param parent the parent widget, or NULL if the parent is the desktop
+/// \param geometry the geometry constraints
+/// \param color the background color of the widget
+///
+/// The function also :
+/// * set default X events mask according to the type of the widget
+/// * set a default cursor
+///
+/// \note the X window needs to be mapped with XMapWindow
+/// \note malloc() a new Widget structure, must be freed with wg_destroy()
+///
 Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor color) {
 
     int x,y;
@@ -102,13 +157,16 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
 
     XDefineCursor(display, new_widget->w, xcursors[0]);
 
-    // map window
-    //XMapWindow(display, new_widget->w);
-
     return new_widget;
 }
 
-// recursively destroy a widget and is childs
+/// \brief recursively destroy a widget and its childs
+///
+/// \param widget the first widget to destroy
+///
+/// * the widget structure is freed
+/// * the window is unmapped **unless** it's a x11 type
+///
 void wg_destroy(Widget *widget) {
 
     printf("wg_destroy %d\n",widget->type);
@@ -145,6 +203,15 @@ printf("Destroy widget %d\n",widget->type);
 
 }
 
+/// \brief create a widget embedding a given X window
+///
+/// \param type the widget type
+/// \param w the X Window
+/// \param parent the parent widget, or NULL if the parent is the desktop
+/// \param geometry the geometry constraints
+///
+/// \note malloc() a new Widget structure, must be freed with wg_destroy()
+///
 Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *geometry) {
 
     // allocate widget structure
@@ -168,10 +235,24 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     return widget;
 }
 
+/// \brief move a widget
+///
+/// \param wg the widget
+/// \param new_x new x position (from parent widget point of view)
+/// \param new_y new y position (from parent widget point of view)
+///
 void wg_move(Widget *wg,int new_x, int new_y) {
     XMoveWindow(display,wg->w,new_x,new_y);
 }
 
+/// \brief resize a widget
+///
+/// \param wg the widget
+/// \param new_width new width
+/// \param new_height new height
+///
+/// Childs widgets are also resized according to geometry constraints
+///
 void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 
     Window w = wg->w;
@@ -203,20 +284,23 @@ void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 // Drawing functions
 // ******************
 
+/// \brief paint a title bar
+///
+/// \param wg the widget
+/// \param e XExposeEvent
+///
+/// The text is centered on a background rectangle
+///
+/// \todo clipping
+///
 void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     if (wg->text == NULL ) return;
 
     static Bool init=False;
-    static XftFont *font;
     static XRenderColor rcolor_fg,rcolor_bg;
     static XftColor fcolor_fg,fcolor_bg;
     if (!init) {
-
-        font =  XftFontOpen (display, screen_num,
-                             XFT_FAMILY, XftTypeString, "charter",
-                             XFT_SIZE, XftTypeDouble, 8.0,
-                             NULL);
 
         rcolor_fg.red  = xcolors[col_title_focus].red;
         rcolor_fg.green=xcolors[col_title_focus].green;
@@ -239,7 +323,7 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     // get text size
     XGlyphInfo extents;
-    XftTextExtents8 (display,font,(XftChar8 *)wg->text, strlen(wg->text),&extents);
+    XftTextExtents8 (display, _xft_font,(XftChar8 *)wg->text, strlen(wg->text),&extents);
 
 
     XftDraw *xftdraw;
@@ -248,7 +332,7 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
     if (extents.width>0) {
         int left = (window_attrs.width - extents.width)/2;
         XftDrawRect(xftdraw, &fcolor_bg,left,0,extents.width,11);
-        XftDrawString8(xftdraw, &fcolor_fg, font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
+        XftDrawString8(xftdraw, &fcolor_fg, _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
 
     }
 
@@ -257,6 +341,22 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
 }
 
+/// \brief draw a shadow on the border of a X Window
+///
+/// \param w the X Window
+/// \param GC the graphic context
+/// \param x1 first corner x
+/// \param y1 first corner y
+/// \param x2 second corner x
+/// \param y2 second corner y
+/// \param nw color of the north-west lines
+/// \param se color of the south-east lines
+///
+/// * light nw/dark se color for volume effect
+/// * dark nw/light se color for depth effect
+///
+/// \todo clipping
+///
 void draw_shadow(Window w,GC gc,int x1,int y1,int x2,int y2,XColor nw,XColor se) {
 
     XSetForeground(display, gc, se.pixel);
@@ -269,6 +369,22 @@ void draw_shadow(Window w,GC gc,int x1,int y1,int x2,int y2,XColor nw,XColor se)
 
 }
 
+/// \brief draw a shadow on the border of a X Window
+///
+/// \param w the X Window
+/// \param GC the graphic context
+/// \param x1 first corner x
+/// \param y1 first corner y
+/// \param x2 second corner x
+/// \param y2 second corner y
+/// \param nw color of the north-west lines
+/// \param se color of the south-east lines
+///
+/// * light nw/dark se color for volume effect
+/// * dark nw/light se color for depth effect
+///
+/// \todo clipping
+///
 void draw_widget_button(Widget *wg,XExposeEvent e) {
 
     XImage *image,*shapeimage;
@@ -290,7 +406,15 @@ void draw_widget_button(Widget *wg,XExposeEvent e) {
     XFreeGC(display,gc);
 
 }
-
+/// \brief paint a window decoration
+///
+/// \param wg the decoration widget
+/// \param the XExposeEvent
+///
+/// Draw a shadow on the border of the window
+///
+/// \todo clipping
+///
 void draw_widget_decoration(Widget *wg,XExposeEvent e) {
 
     // get decoration size
@@ -316,7 +440,11 @@ void draw_widget_decoration(Widget *wg,XExposeEvent e) {
 
 }
 
-
+/// \brief find the widget embedding a X Window
+///
+/// \param w the X Window
+/// \return a widget if found, NULL otherwise
+///
 Widget *wg_find_from_window(Window w) {
 
     // find widget in widget list
@@ -333,19 +461,20 @@ Widget *wg_find_from_window(Window w) {
 
 }
 
+/// \brief destroy all the widgets
+///
+/// \bug XQueryTree hangs ...
+///
 void wg_destroy_all() {
-
-    // grap display during reparenting
-    XGrabServer(display);
 
     //find root windows
     Window root_return,parent;
     Window *children,*child;
     unsigned int nchildren=0,i;
     Window root = RootWindow(display, screen_num);
+
     XQueryTree(display, root, &root_return, &parent, &children, &nchildren);
 
-    // reparent windows
     for(i=0, child=children; i<nchildren; i ++,child++) {
         Widget *wg = wg_find_from_window(*child);
         if (!wg) continue;
@@ -353,8 +482,5 @@ void wg_destroy_all() {
     }
 
     if (children) XFree(children);
-
-    // ungrap display
-    XUngrabServer(display);
 
 }

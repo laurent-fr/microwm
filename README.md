@@ -4,9 +4,8 @@ a microscopic window manager
 Status :
 --------
 
-Very alpha code for now ...
-
-* Windows decorations automatically added to mapped windows
+v0.1
+* Windows decorations automatically added to windows
 * Moving and resizing windows is possible.
 
 Compile :
@@ -36,16 +35,11 @@ xterm&
 TODO :
 ------
 
-For version 0.1 :
+For version 0.2 :
 
 * cleanup on exit
 * check windows hints when resizing window
-* implement close button
-* raise a window by clicking anywhere 
-* general bugfix
-
-For version 0.2 :
-
+* raise a window by clicking anywhere
 * implement Iconify (a taskbar will be needed ...)
 
 After version 0.2 :

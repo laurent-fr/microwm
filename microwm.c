@@ -1,6 +1,22 @@
+// microWM - a microscopic Window Manager
+// Copyright (C) 2015 Laurent FRANCOISE - gihtub_at_diygallery_dot_com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <search.h>
 
 #include "widgets.h"
 #include "microwm.h"
@@ -10,13 +26,15 @@
 #include "bitmap/iconify.xpm"
 
 // globals
-Display *display;
-int screen_num;
-Colormap colormap;
+// ********
 
+// X11
+Display *display;   ///< global variable, the X display
+int screen_num;     ///< global variable, the X screen number
+Colormap colormap;  ///< global variable, the X color map
 
-
-XColor xcolors[col_count];
+// colors
+XColor xcolors[col_count];  ///< global array, the X colors available to the application
 char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#ff6600"};
 
 // cursors
@@ -26,14 +44,21 @@ unsigned int cursors_def[]={
 		XC_right_side,XC_top_right_corner,XC_bottom_right_corner, XC_arrow,
 		XC_left_side,XC_top_left_corner,XC_bottom_left_corner
 		 };
+Cursor xcursors[NB_CURSOR]; ///< global array, the X cursors availables to the application
 
-Cursor xcursors[NB_CURSOR];
+// xft font
+XftFont *_xft_font; ///< global variable, the Xft font used for drawing titles
 
+// X11 functions
+// **************
 
+/// \brief Init X connection
+///
+/// Open X Display, allocate X colors, X cursors & Xft font
+///
 void connect_x_server() {
 
     display = XOpenDisplay(NIL);
-    // TODO : fail if no display
 
     screen_num = DefaultScreen(display);
     colormap = XDefaultColormap(display,screen_num);
@@ -49,11 +74,34 @@ void connect_x_server() {
 		xcursors[i]=XCreateFontCursor(display,cursors_def[i]);
 	}
 
+	// open xft font
+    _xft_font =  XftFontOpen (display, screen_num,
+                             XFT_FAMILY, XftTypeString, "charter",
+                             XFT_SIZE, XftTypeDouble, 8.0,
+                             NULL);
 
 }
 
+/// \brief Close X connection
+///
+/// Free Xft font, cleanup widgets
+///
+void disconnect_x_server() {
 
+    // free xft font
+    XftFontClose(display,_xft_font);
 
+    // destroy all widgets
+    //wg_destroy_all();
+
+}
+
+/// \brief Get a X Window Name
+///
+/// \param w a X window
+/// \param name of the window (output)
+/// \return 0 for success
+///
 Status get_window_name(Window w, char **name) {
     int    status;
     XTextProperty text_prop;
@@ -70,7 +118,23 @@ Status get_window_name(Window w, char **name) {
     return 1;
 }
 
+// WM functions
+// *************
 
+/// \brief Create the window decoration around a X window
+///
+/// \param w a X window
+///
+/// The decoration is made of multiple widgets :
+/// * A decoration widget which contains a title bar and the X window
+/// * A title bar widget which contains 3 buttons
+/// * A button widget for closing the window
+/// * A button widget for iconify
+/// * A button widget for maximizing
+///
+/// At the and of the process the X window is reparented to the decoration
+/// and all windows are mapped on screen.
+///
 void create_window_decoration(Window window) {
 
     // change window border
@@ -150,12 +214,13 @@ void create_window_decoration(Window window) {
 
     xclient->on_unmap = &on_unmap_xclient;
 
-    // Add to SaveSet
+    // add to SaveSet
     XAddToSaveSet(display,window);
 
     // reparent window into decoration
     XReparentWindow(display,window,decoration->w,DECORATION_MARGIN,DECORATION_MARGIN_TOP);
 
+    // display windows
     XMapWindow(display,decoration->w);
     XMapSubwindows(display,decoration->w);
     XMapSubwindows(display,title_bar->w);
@@ -167,7 +232,13 @@ void create_window_decoration(Window window) {
 // Widget events
 // **************
 
-// display one of 8 resize cursors when the mouse is on the edge of a decoration window
+/// \brief display one of 8 resize cursors when the mouse is on the edge of a decoration window
+///
+/// \param decoration the widget in which the mouse is moving
+/// \param e the XMotionEvent
+///
+/// This function does nothing if the window is maximized.
+///
 void on_motion_decoration(Widget *decoration, XMotionEvent e) {
 
     // do nothing if windows is maximized
@@ -190,8 +261,13 @@ void on_motion_decoration(Widget *decoration, XMotionEvent e) {
 
 }
 
-
-// destroy decoration
+/// \brief Destroy a decoration when the X Window is unmapped
+///
+/// \param xclient the widget which contains the X window
+/// \param e the XUnmapEvent
+///
+/// \todo reparent the X window do root, remove frome save set
+///
 void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
 
 	Widget *decoration = xclient->parent;
@@ -210,8 +286,17 @@ void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
 
 }
 
-// move a window
+/// \brief Move a window when the user drag the title bar
+///
+/// \param title_bar the title bar which is clicked
+/// \param e the XButtonPressedEvent
+///
+/// A simple click focus the window
+///
 void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
+
+    // do nothing if window is maximized
+    if (title_bar->parent->wm_window->state == wm_maximized ) return;
 
     // raise window
     Widget *decoration = title_bar->parent;
@@ -258,9 +343,8 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
                 if (new_x<0) new_x=0;
                 if (new_y<0) new_y=0;
 
+                // move the window
                 wg_move(title_bar->parent,new_x,new_y);
-
-                //while (XCheckTypedEvent(display, MotionNotify, &event));
 
                 break;
 
@@ -273,10 +357,15 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
 }
 
-// resize a window
+/// \brief Resize a window when the user drag the border of the decoration
+///
+/// \param decoration the decoration which is clicked
+/// \param e the XButtonPressedEvent
+///
+/// A simple click focus the window
 void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
 
-    // do nothing if windows is maximized
+    // do nothing if window is maximized
     if (decoration->wm_window->state == wm_maximized ) return;
 
     XRaiseWindow(display, decoration->w);
@@ -339,8 +428,6 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
                 if ((new_width!=width_window_init)||(new_height!=height_window_init)) wg_resize(decoration, new_width, new_height);
                 if ((new_x!=x_window_init)||(new_y!=y_window_init)) wg_move(decoration, new_x, new_y);
 
-                //while (XCheckTypedEvent(display, MotionNotify, &event));
-
                 break;
 
             case Expose:
@@ -351,6 +438,13 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
     }
 }
 
+/// \brief Close window action
+///
+/// \param button the close button
+/// \param e the XButtonPressedEvent
+///
+/// If supported, send a WM_DELETE_WINDOW to the client
+/// otherwise kill the client
 void on_click_close(Widget *button,XButtonPressedEvent e) {
 
     Window window = button->parent->parent->wm_window->w;
@@ -386,11 +480,25 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 
 }
 
+/// \brief Iconify window action
+///
+/// \param button the close button
+/// \param e the XButtonPressedEvent
+///
+/// \todo implement the function ....
+///
 void on_click_iconify(Widget *button,XButtonPressedEvent e) {
 
     printf("Not implemented yet.\n");
 }
 
+/// \brief Maximize window action
+///
+/// \param button the close button
+/// \param e the XButtonPressedEvent
+///
+/// When maximizing, the old position of the window is stored in decoration->wm_window
+///
 void on_click_full(Widget *button,XButtonPressedEvent e) {
 
     Widget *decoration = button->parent->parent;
@@ -404,7 +512,6 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 	if (wm_window->state == wm_maximized) {
 
         button->xpm = full_xpm;
-        //XClearArea(display,button->w,0,0,15,15,True);
 
 		wg_resize(decoration,wm_window->width,wm_window->height);
 		wg_move(decoration,wm_window->x,wm_window->y);
@@ -433,8 +540,6 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 
         button->xpm = unfull_xpm ;
 
-        //XDefineCursor(display, decoration->w, xcursors[0]);
-
 		wg_move(button->parent->parent,root_attrs.x,root_attrs.y);
 		wg_resize(button->parent->parent,root_attrs.width,root_attrs.height);
 
@@ -449,6 +554,10 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 // generic events handlers
 // ************************
 
+/// \brief Handle expose event
+///
+/// \param e the XExposeEvent
+///
 void on_expose_event(XExposeEvent e) {
 
     Widget *widget = wg_find_from_window(e.window);
@@ -457,7 +566,10 @@ void on_expose_event(XExposeEvent e) {
     if (widget->on_expose) widget->on_expose(widget,e);
 }
 
-
+/// \brief Handle button press event
+///
+/// \param e the XButtonPressedEvent
+///
 void on_buttonpress_event(XButtonPressedEvent e) {
 
     Widget *widget = wg_find_from_window(e.window);
@@ -466,6 +578,10 @@ void on_buttonpress_event(XButtonPressedEvent e) {
     if (widget->on_click) widget->on_click(widget,e);
 }
 
+/// \brief Handle motion event
+///
+/// \param e the XMotionEvent
+///
 void on_motion_event(XMotionEvent e) {
 
     Widget *widget = wg_find_from_window(e.window);
@@ -474,6 +590,10 @@ void on_motion_event(XMotionEvent e) {
     if (widget->on_motion) widget->on_motion(widget,e);
 }
 
+/// \brief Handle unmap event
+///
+/// \param e the XUnmapEvent
+///
 void on_unmap_event(XUnmapEvent e) {
 
 	Widget *widget = wg_find_from_window(e.window);
@@ -482,6 +602,12 @@ void on_unmap_event(XUnmapEvent e) {
 	if (widget->on_unmap) widget->on_unmap(widget,e);
 }
 
+/// \brief Handle configure request event
+///
+/// \param e the XConfigureRequestEvent
+///
+/// \todo not very useful for now
+///
 void on_configure_request(XConfigureRequestEvent e) {
 
     XWindowChanges changes;
@@ -496,7 +622,10 @@ void on_configure_request(XConfigureRequestEvent e) {
 
 }
 
-
+/// \brief Reparent all X windows without decoration
+///
+/// Used at startup
+///
 void reparent_root_windows() {
 
     // grap display during reparenting
@@ -521,8 +650,10 @@ void reparent_root_windows() {
 
 }
 
-
-
+/// \brief the main event loop
+///
+/// waits and dispatch the X events
+///
 void main_event_loop() {
 
     XEvent event;
@@ -566,6 +697,8 @@ void main_event_loop() {
 			break;
 
         case MotionNotify:
+            // discard other motion events
+            while (XCheckTypedEvent(display, MotionNotify, &event));
             on_motion_event(event.xmotion);
             break;
 
