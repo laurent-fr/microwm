@@ -6,6 +6,8 @@ a microscopic window manager
 Status :
 --------
 
+Early stage of development, only a few things implemented for now ...
+
 v0.1
 * Windows decorations automatically added to windows
 * Moving and resizing windows is possible.
