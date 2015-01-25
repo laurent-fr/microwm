@@ -316,9 +316,6 @@ void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
 ///
 void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
-    // do nothing if window is maximized
-    if (title_bar->parent->wm_window->state == wm_maximized ) return;
-
     // raise window
     Widget *decoration = title_bar->parent;
     XRaiseWindow(display, decoration->w);
@@ -347,12 +344,16 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
             case MotionNotify:
 
-                /* // if windows is maximized, set it to normal and update width an height
+                 // if windows is maximized, set it to normal and update width an height
                 if (decoration->wm_window->state == wm_maximized ) {
                     decoration->wm_window->state = wm_normal;
                     wg_resize(decoration,decoration->wm_window->width,decoration->wm_window->height );
-                    // TODO : if mouse is out of the window, move it
-                }*/
+                    // if mouse is out of the title_bar, move it to the right
+                    if ((x_mouse_init-x_window_init)>(decoration->wm_window->width-2*DECORATION_MARGIN_TOP)) {
+                        x_window_init+=x_mouse_init-x_window_init-decoration->wm_window->width+2*DECORATION_MARGIN_TOP;
+                        wg_move(decoration,x_window_init,y_window_init);
+                    }
+                }
 
                 x_mouse_current = event.xmotion.x_root;
                 y_mouse_current = event.xmotion.y_root;
