@@ -38,8 +38,9 @@ Here is how to setup a quick test environnment :
 
 	Xnest :1
 	export DISPLAY=:1
-	xterm&
-	xsetroot -solid SteelBlue
+
+	xterm &
+	xsetroot -solid SteelBlue &
 	./microwm
 
 
