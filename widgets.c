@@ -54,7 +54,7 @@ int widget_cmp(const void *wg1,const void *wg2) {
 /// \brief resolve the geometry constraints for a widget
 ///
 /// \param geom pointer to a WgGeometry structure
-/// \param the widget containing the widget for which we are calculating the constraints
+/// \param parent the widget containing the widget for which we are calculating the constraints
 /// \param x (output) the x position of the widget (from is parent)
 /// \param y (output) the y position of the widget (from is parent)
 /// \param width (output) the width of the widget
@@ -344,7 +344,7 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 /// \brief draw a shadow on the border of a X Window
 ///
 /// \param w the X Window
-/// \param GC the graphic context
+/// \param gc the graphic context
 /// \param x1 first corner x
 /// \param y1 first corner y
 /// \param x2 second corner x
@@ -369,21 +369,12 @@ void draw_shadow(Window w,GC gc,int x1,int y1,int x2,int y2,XColor nw,XColor se)
 
 }
 
-/// \brief draw a shadow on the border of a X Window
+/// \brief paint a button
 ///
-/// \param w the X Window
-/// \param GC the graphic context
-/// \param x1 first corner x
-/// \param y1 first corner y
-/// \param x2 second corner x
-/// \param y2 second corner y
-/// \param nw color of the north-west lines
-/// \param se color of the south-east lines
+/// \param wg the button
+/// \param e the XExposeEvent
 ///
-/// * light nw/dark se color for volume effect
-/// * dark nw/light se color for depth effect
-///
-/// \todo clipping
+/// Draw a pixmap in the center of the button
 ///
 void draw_widget_button(Widget *wg,XExposeEvent e) {
 
@@ -409,7 +400,7 @@ void draw_widget_button(Widget *wg,XExposeEvent e) {
 /// \brief paint a window decoration
 ///
 /// \param wg the decoration widget
-/// \param the XExposeEvent
+/// \param e the XExposeEvent
 ///
 /// Draw a shadow on the border of the window
 ///

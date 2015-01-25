@@ -123,7 +123,7 @@ Status get_window_name(Window w, char **name) {
 
 /// \brief Create the window decoration around a X window
 ///
-/// \param w a X window
+/// \param window a X window
 ///
 /// The decoration is made of multiple widgets :
 /// * A decoration widget which contains a title bar and the X window
@@ -199,6 +199,7 @@ void create_window_decoration(Window window) {
 
     full_button->xpm = full_xpm;
     full_button->on_click = &on_click_full;
+    full_button->on_expose = &paint_full_button;
 
     // add iconify button
     WgGeometry iconify_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
@@ -226,6 +227,26 @@ void create_window_decoration(Window window) {
     XMapSubwindows(display,title_bar->w);
 
     XFlush(display);
+
+}
+
+/// \brief paint the maximize button
+///
+/// \param button the button widget
+/// \param e the XExposeEvent
+///
+/// Change the icon according to the state of the window (maximized/normal)
+/// then call the original paint function
+///
+void paint_full_button(Widget *button,XExposeEvent e) {
+
+    Widget *decoration = button->parent->parent;
+    if (decoration->wm_window->state == wm_maximized)
+        button->xpm = unfull_xpm;
+    else
+        button->xpm = full_xpm;
+
+    draw_widget_button(button,e);
 
 }
 
@@ -511,8 +532,6 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 	// maximized to normal window
 	if (wm_window->state == wm_maximized) {
 
-        button->xpm = full_xpm;
-
 		wg_resize(decoration,wm_window->width,wm_window->height);
 		wg_move(decoration,wm_window->x,wm_window->y);
 
@@ -537,8 +556,6 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 		wm_window->y = deco_attrs.y;
 		wm_window->width = deco_attrs.width;
 		wm_window->height = deco_attrs.height;
-
-        button->xpm = unfull_xpm ;
 
 		wg_move(button->parent->parent,root_attrs.x,root_attrs.y);
 		wg_resize(button->parent->parent,root_attrs.width,root_attrs.height);

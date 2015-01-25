@@ -45,6 +45,8 @@ Status get_window_name(Window w, char **name);
 
 void create_window_decoration(Window window);
 
+void paint_full_button(Widget *button,XExposeEvent e);
+
 void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e);
 void on_click_decoration(Widget *decoration,XButtonPressedEvent e);
 void on_click_close(Widget *button,XButtonPressedEvent e);
