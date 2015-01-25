@@ -230,6 +230,9 @@ void create_window_decoration(Window window) {
 
 }
 
+// Paint events
+// *************
+
 /// \brief paint the maximize button
 ///
 /// \param button the button widget
