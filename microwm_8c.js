@@ -18,6 +18,7 @@ var microwm_8c =
     [ "on_motion_event", "microwm_8c.html#ae716a3d92cd41e7b4c7ed1c383401d60", null ],
     [ "on_unmap_event", "microwm_8c.html#a21a7858d956bb18e673bd4f92cda5eb0", null ],
     [ "on_unmap_xclient", "microwm_8c.html#a9b52b1be1b3afebe554091e5f853e4f5", null ],
+    [ "paint_full_button", "microwm_8c.html#a22f5ccf87280a1c04dcacdcf938faaec", null ],
     [ "reparent_root_windows", "microwm_8c.html#afad4992fd68b6645e7aeab31a26fedda", null ],
     [ "_xft_font", "microwm_8c.html#ad73dd165f35019f4b1b4bb0c32e33693", null ],
     [ "colormap", "microwm_8c.html#af611adb2a277a44b745300318b0bbca7", null ],

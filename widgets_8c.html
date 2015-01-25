@@ -109,7 +109,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:a4b4a607edd001b85ad700e412599ab6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">draw a shadow on the border of a X Window  <a href="#a4b4a607edd001b85ad700e412599ab6b">More...</a><br/></td></tr>
 <tr class="separator:a4b4a607edd001b85ad700e412599ab6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd5ea9ffe71859f785398cd8e0f79e05"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="widgets_8c.html#acd5ea9ffe71859f785398cd8e0f79e05">draw_widget_button</a> (<a class="el" href="widgets_8h.html#a1e1f1e7a0e57a64828ae02c74b502ae9">Widget</a> *wg, XExposeEvent e)</td></tr>
-<tr class="memdesc:acd5ea9ffe71859f785398cd8e0f79e05"><td class="mdescLeft">&#160;</td><td class="mdescRight">draw a shadow on the border of a X Window  <a href="#acd5ea9ffe71859f785398cd8e0f79e05">More...</a><br/></td></tr>
+<tr class="memdesc:acd5ea9ffe71859f785398cd8e0f79e05"><td class="mdescLeft">&#160;</td><td class="mdescRight">paint a button  <a href="#acd5ea9ffe71859f785398cd8e0f79e05">More...</a><br/></td></tr>
 <tr class="separator:acd5ea9ffe71859f785398cd8e0f79e05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e4ddb31bd92c17803049f93003bef08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="widgets_8c.html#a7e4ddb31bd92c17803049f93003bef08">draw_widget_decoration</a> (<a class="el" href="widgets_8h.html#a1e1f1e7a0e57a64828ae02c74b502ae9">Widget</a> *wg, XExposeEvent e)</td></tr>
 <tr class="memdesc:a7e4ddb31bd92c17803049f93003bef08"><td class="mdescLeft">&#160;</td><td class="mdescRight">paint a window decoration  <a href="#a7e4ddb31bd92c17803049f93003bef08">More...</a><br/></td></tr>
@@ -207,7 +207,7 @@ Variables</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">w</td><td>the X Window </td></tr>
-    <tr><td class="paramname">GC</td><td>the graphic context </td></tr>
+    <tr><td class="paramname">gc</td><td>the graphic context </td></tr>
     <tr><td class="paramname">x1</td><td>first corner x </td></tr>
     <tr><td class="paramname">y1</td><td>first corner y </td></tr>
     <tr><td class="paramname">x2</td><td>second corner x </td></tr>
@@ -251,27 +251,17 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>draw a shadow on the border of a X Window </p>
+<p>paint a button </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">w</td><td>the X Window </td></tr>
-    <tr><td class="paramname">GC</td><td>the graphic context </td></tr>
-    <tr><td class="paramname">x1</td><td>first corner x </td></tr>
-    <tr><td class="paramname">y1</td><td>first corner y </td></tr>
-    <tr><td class="paramname">x2</td><td>second corner x </td></tr>
-    <tr><td class="paramname">y2</td><td>second corner y </td></tr>
-    <tr><td class="paramname">nw</td><td>color of the north-west lines </td></tr>
-    <tr><td class="paramname">se</td><td>color of the south-east lines</td></tr>
+    <tr><td class="paramname">wg</td><td>the button </td></tr>
+    <tr><td class="paramname">e</td><td>the XExposeEvent</td></tr>
   </table>
   </dd>
 </dl>
-<ul>
-<li>light nw/dark se color for volume effect</li>
-<li>dark nw/light se color for depth effect</li>
-</ul>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>clipping </dd></dl>
+<p>Draw a pixmap in the center of the button </p>
 
-<p>Definition at line <a class="el" href="widgets_8c_source.html#l00388">388</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
+<p>Definition at line <a class="el" href="widgets_8c_source.html#l00379">379</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
 
 </div>
 </div>
@@ -303,14 +293,14 @@ Variables</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">wg</td><td>the decoration widget </td></tr>
-    <tr><td class="paramname">the</td><td>XExposeEvent</td></tr>
+    <tr><td class="paramname">e</td><td>the XExposeEvent</td></tr>
   </table>
   </dd>
 </dl>
 <p>Draw a shadow on the border of the window</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000007">Todo:</a></b></dt><dd>clipping </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>clipping </dd></dl>
 
-<p>Definition at line <a class="el" href="widgets_8c_source.html#l00418">418</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
+<p>Definition at line <a class="el" href="widgets_8c_source.html#l00409">409</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
 
 </div>
 </div>
@@ -510,7 +500,7 @@ malloc() a new Widget structure, must be freed with <a class="el" href="widgets_
 <p>destroy all the widgets </p>
 <dl class="bug"><dt><b><a class="el" href="bug.html#_bug000001">Bug:</a></b></dt><dd>XQueryTree hangs ... </dd></dl>
 
-<p>Definition at line <a class="el" href="widgets_8c_source.html#l00468">468</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
+<p>Definition at line <a class="el" href="widgets_8c_source.html#l00459">459</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
 
 </div>
 </div>
@@ -537,7 +527,7 @@ malloc() a new Widget structure, must be freed with <a class="el" href="widgets_
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a widget if found, NULL otherwise </dd></dl>
 
-<p>Definition at line <a class="el" href="widgets_8c_source.html#l00448">448</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
+<p>Definition at line <a class="el" href="widgets_8c_source.html#l00439">439</a> of file <a class="el" href="widgets_8c_source.html">widgets.c</a>.</p>
 
 </div>
 </div>
@@ -682,7 +672,7 @@ malloc() a new Widget structure, must be freed with <a class="el" href="widgets_
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">geom</td><td>pointer to a <a class="el" href="struct_wg_geometry.html" title="Geometry constraints for a widget. ">WgGeometry</a> structure </td></tr>
-    <tr><td class="paramname">the</td><td>widget containing the widget for which we are calculating the constraints </td></tr>
+    <tr><td class="paramname">parent</td><td>the widget containing the widget for which we are calculating the constraints </td></tr>
     <tr><td class="paramname">x</td><td>(output) the x position of the widget (from is parent) </td></tr>
     <tr><td class="paramname">y</td><td>(output) the y position of the widget (from is parent) </td></tr>
     <tr><td class="paramname">width</td><td>(output) the width of the widget </td></tr>
@@ -845,7 +835,7 @@ malloc() a new Widget structure, must be freed with <a class="el" href="widgets_
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="widgets_8c.html">widgets.c</a></li>
-    <li class="footer">Generated on Sun Jan 25 2015 13:51:29 for microWM by
+    <li class="footer">Generated on Sun Jan 25 2015 18:24:58 for microWM by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>

@@ -103,6 +103,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1a2172a049fddf3839b7fc446ba18feb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="microwm_8c.html#a1a2172a049fddf3839b7fc446ba18feb">create_window_decoration</a> (Window window)</td></tr>
 <tr class="memdesc:a1a2172a049fddf3839b7fc446ba18feb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the window decoration around a X window.  <a href="#a1a2172a049fddf3839b7fc446ba18feb">More...</a><br/></td></tr>
 <tr class="separator:a1a2172a049fddf3839b7fc446ba18feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22f5ccf87280a1c04dcacdcf938faaec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="microwm_8c.html#a22f5ccf87280a1c04dcacdcf938faaec">paint_full_button</a> (<a class="el" href="widgets_8h.html#a1e1f1e7a0e57a64828ae02c74b502ae9">Widget</a> *button, XExposeEvent e)</td></tr>
+<tr class="memdesc:a22f5ccf87280a1c04dcacdcf938faaec"><td class="mdescLeft">&#160;</td><td class="mdescRight">paint the maximize button  <a href="#a22f5ccf87280a1c04dcacdcf938faaec">More...</a><br/></td></tr>
+<tr class="separator:a22f5ccf87280a1c04dcacdcf938faaec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6992682f465fd5b2c4e10ee5f3e1db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="microwm_8c.html#a2e6992682f465fd5b2c4e10ee5f3e1db">on_motion_decoration</a> (<a class="el" href="widgets_8h.html#a1e1f1e7a0e57a64828ae02c74b502ae9">Widget</a> *decoration, XMotionEvent e)</td></tr>
 <tr class="memdesc:a2e6992682f465fd5b2c4e10ee5f3e1db"><td class="mdescLeft">&#160;</td><td class="mdescRight">display one of 8 resize cursors when the mouse is on the edge of a decoration window  <a href="#a2e6992682f465fd5b2c4e10ee5f3e1db">More...</a><br/></td></tr>
 <tr class="separator:a2e6992682f465fd5b2c4e10ee5f3e1db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -224,7 +227,7 @@ Variables</h2></td></tr>
 <p>Create the window decoration around a X window. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">w</td><td>a X window</td></tr>
+    <tr><td class="paramname">window</td><td>a X window</td></tr>
   </table>
   </dd>
 </dl>
@@ -316,7 +319,7 @@ Variables</h2></td></tr>
 <p>the main event loop </p>
 <p>waits and dispatch the X events </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00657">657</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00678">678</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -342,7 +345,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00573">573</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00594">594</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -380,7 +383,7 @@ Variables</h2></td></tr>
 </dl>
 <p>If supported, send a WM_DELETE_WINDOW to the client otherwise kill the client </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00448">448</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00473">473</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -418,7 +421,7 @@ Variables</h2></td></tr>
 </dl>
 <p>A simple click focus the window </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00366">366</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00391">391</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -456,7 +459,7 @@ Variables</h2></td></tr>
 </dl>
 <p>When maximizing, the old position of the window is stored in decoration-&gt;wm_window </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00502">502</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00527">527</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -494,7 +497,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>implement the function .... </dd></dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00490">490</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00515">515</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -532,7 +535,7 @@ Variables</h2></td></tr>
 </dl>
 <p>A simple click focus the window </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00296">296</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00320">320</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -559,7 +562,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>not very useful for now </dd></dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00611">611</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00632">632</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -585,7 +588,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00561">561</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00582">582</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -623,7 +626,7 @@ Variables</h2></td></tr>
 </dl>
 <p>This function does nothing if the window is maximized. </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00242">242</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00266">266</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -649,7 +652,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00585">585</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00606">606</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -675,7 +678,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00597">597</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00618">618</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -713,7 +716,45 @@ Variables</h2></td></tr>
 </dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>reparent the X window do root, remove frome save set </dd></dl>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00271">271</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00295">295</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a22f5ccf87280a1c04dcacdcf938faaec"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void paint_full_button </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="widgets_8h.html#a1e1f1e7a0e57a64828ae02c74b502ae9">Widget</a> *&#160;</td>
+          <td class="paramname"><em>button</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">XExposeEvent&#160;</td>
+          <td class="paramname"><em>e</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>paint the maximize button </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">button</td><td>the button widget </td></tr>
+    <tr><td class="paramname">e</td><td>the XExposeEvent</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Change the icon according to the state of the window (maximized/normal) then call the original paint function </p>
+
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00244">244</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -733,7 +774,7 @@ Variables</h2></td></tr>
 <p>Reparent all X windows without decoration. </p>
 <p>Used at startup </p>
 
-<p>Definition at line <a class="el" href="microwm_8c_source.html#l00629">629</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
+<p>Definition at line <a class="el" href="microwm_8c_source.html#l00650">650</a> of file <a class="el" href="microwm_8c_source.html">microwm.c</a>.</p>
 
 </div>
 </div>
@@ -873,7 +914,7 @@ Variables</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="microwm_8c.html">microwm.c</a></li>
-    <li class="footer">Generated on Sun Jan 25 2015 13:51:29 for microWM by
+    <li class="footer">Generated on Sun Jan 25 2015 18:24:58 for microWM by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>
