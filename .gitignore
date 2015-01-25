@@ -1,0 +1,7 @@
+*.o
+microwm
+doc/html
+doxygen
+microwm.cbp
+microwm.depend
+microwm.layout
