@@ -1,6 +1,15 @@
+#CC=clang
 CC=colorgcc
-CFLAGS=-g -W -Wall -std=gnu99 -pedantic -I/usr/include/freetype2/
-LDFLAGS=-lX11 -lXft -lXpm
+#CC=gcc
+
+CFLAGS=-g -W -Wall -std=gnu99 -pedantic
+CFLAGS+= $(shell pkg-config --cflags xft)
+CFLAGS+= $(shell pkg-config --cflags xpm)
+CFLAGS+= $(shell pkg-config --cflags x11)
+
+LDFLAGS=$(shell pkg-config --libs x11)
+LDFLAGS+=$(shell pkg-config --libs xft)
+LDFLAGS+=$(shell pkg-config --libs xpm)
 
 all: microwm
 
