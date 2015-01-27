@@ -352,7 +352,7 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
                     decoration->wm_window->state = wm_normal;
                     wg_resize(decoration,decoration->wm_window->width,decoration->wm_window->height );
                     // if mouse is out of the title_bar, move it to the right
-                    if ((x_mouse_init-x_window_init)>(decoration->wm_window->width-2*DECORATION_MARGIN_TOP)) {
+                    if (((unsigned int)x_mouse_init-(unsigned int)x_window_init)>(decoration->wm_window->width-2*DECORATION_MARGIN_TOP)) {
                         x_window_init+=x_mouse_init-x_window_init-decoration->wm_window->width+2*DECORATION_MARGIN_TOP;
                         wg_move(decoration,x_window_init,y_window_init);
                     }
@@ -483,9 +483,10 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
     int protocols_count=0;
 	XGetWMProtocols(display,window,&protocols,&protocols_count);
 	Bool has_wm_delete_window = False;
-    for (int i=0,protocol=*protocols;i<protocols_count;i ++,protocol++) {
-        //printf("Atom: %s\n",XGetAtomName(display,protocol));
-        char *name = XGetAtomName(display,protocol);
+    int i;
+    for (i=0,protocol=protocols;i<protocols_count;i ++,protocol++) {
+        //printf("Atom: %s\n",XGetAtomName(display,*protocol));
+        char *name = XGetAtomName(display,*protocol);
         int result = strcmp(name,"WM_DELETE_WINDOW");
         XFree(name);
         if (!result) { has_wm_delete_window = True ; break ;}
