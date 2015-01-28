@@ -21,7 +21,19 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
+typedef struct {
+
+    int min_width;
+    int min_height;
+    int max_width;
+    int max_height;
+    int width_inc;
+    int height_inc;
+
+} icccm_size_hints;
+
 Status get_window_name(Window w, char **name);
 Bool has_wm_delete_window(Window w);
+void get_wm_normal_hints(Window w,icccm_size_hints *hints);
 
 #endif // icccm_h

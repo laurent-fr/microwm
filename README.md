@@ -20,14 +20,12 @@ See [DOxygen documentation](http://laurent-fr.github.io/microwm/)
 Compile :
 ---------
 
-No generic Makefile for now, my dev system is a debian-like Linux.
-
 	apt-get install libx11-dev libxpm-dev libxft-dev libfreetype6-dev
 
 	apt-get install colorgcc
 	(or change CC=gcc in the Makefile)
 
-make
+    make
 
 Run :
 -----
@@ -50,7 +48,6 @@ TODO :
 For version 0.2 :
 
 * cleanup on exit
-* check windows hints when resizing window
 * raise a window by clicking anywhere
 * implement Iconify (a taskbar will be needed ...)
 

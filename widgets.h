@@ -30,6 +30,9 @@
 #define DECORATION_MARGIN 4         ///< The distance between the border of the X window and the decoration
 #define DECORATION_MARGIN_TOP 20    ///< The title bar height
 
+#define MIN_WINDOW_WIDTH (2*DECORATION_MARGIN+16)   ///< minimum width of a X window
+#define MIN_WINDOW_HEIGHT (DECORATION_MARGIN+DECORATION_MARGIN_TOP+16) ///< minimum height of a X window
+
 /// Types of widgets
 typedef enum {
     wg_x11,         ///< a native X11 window

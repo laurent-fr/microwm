@@ -394,6 +394,13 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
     if (e.y<DECORATION_MARGIN_TOP) position |= north;
     if (e.y>(height_window_init-DECORATION_MARGIN_TOP)) position |= south;
 
+    // get hints from window
+    icccm_size_hints hints;
+    get_wm_normal_hints(decoration->wm_window->w,&hints);
+    printf("min_width=%d, max_width=%d, width_inc=%d\nmin_height=%d, max_height=%d, height_inc=%d\n",
+           hints.min_width,hints.max_width,hints.width_inc,
+           hints.min_height,hints.max_height,hints.height_inc);
+
     // sub event-loop, exits when button mouse is released
     XEvent event;
     Bool resizing = True;
@@ -426,8 +433,18 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
                 //  minimum  values
                 if (new_x<0) new_x=0;
                 if (new_y<0) new_y=0;
-                if (new_width<=2*DECORATION_MARGIN+16) new_width=2*DECORATION_MARGIN+16;
-                if (new_height<=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16) new_height=DECORATION_MARGIN+DECORATION_MARGIN_TOP+16;
+                if ((hints.min_width>0)&&(new_width<hints.min_width)) new_width=hints.min_width;
+                if ((hints.min_height>0)&&(new_height<hints.min_height)) new_height=hints.min_height;
+                if (new_width<=MIN_WINDOW_WIDTH) new_width=MIN_WINDOW_WIDTH;
+                if (new_height<=MIN_WINDOW_HEIGHT) new_height=MIN_WINDOW_HEIGHT;
+
+                // maximum values
+                if ((hints.max_width>0)&&(new_width>hints.max_width)) new_width=hints.max_width;
+                if ((hints.max_height>0)&&(new_height>hints.max_height)) new_height=hints.max_height;
+
+                // increment
+                if (hints.width_inc>0) new_width = (new_width/hints.width_inc)*hints.width_inc;
+                if (hints.height_inc>0) new_height = (new_height/hints.height_inc)*hints.height_inc;
 
                 // move and resize if needed
                 if ((new_width!=width_window_init)||(new_height!=height_window_init)) wg_resize(decoration, new_width, new_height);

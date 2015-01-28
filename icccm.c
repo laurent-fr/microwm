@@ -73,3 +73,42 @@ Bool has_wm_delete_window(Window w) {
 
     return has_property;
 }
+
+/// \brief read WM_NORMAL_HINTS window property
+///
+/// \param w a X window
+/// \param hints (output) a iccm_size_hints structure with the data
+///
+/// undefined values are set to -1
+///
+void get_wm_normal_hints(Window w,icccm_size_hints *hints) {
+
+    hints->height_inc=-1;
+    hints->width_inc=-1;
+    hints->max_height=-1;
+    hints->max_width=-1;
+    hints->min_height=-1;
+    hints->min_width=-1;
+
+    XSizeHints hints_return;
+    long supplied_return=0;
+    Status status = XGetWMNormalHints(display,w,&hints_return,&supplied_return);
+   // if (status!=0) return;
+
+    if (supplied_return&PMinSize) {
+        hints->min_width = hints_return.min_width;
+        hints->min_height = hints_return.min_height;
+    }
+
+    if (supplied_return&PMaxSize) {
+        hints->max_width = hints_return.max_width;
+        hints->max_height = hints_return.max_height;
+    }
+
+    if (supplied_return&PResizeInc) {
+        hints->width_inc = hints_return.width_inc;
+        hints->height_inc = hints_return.height_inc;
+    }
+
+
+}
