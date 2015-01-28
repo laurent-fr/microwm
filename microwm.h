@@ -41,8 +41,6 @@ enum {
 void connect_x_server();
 void disconnect_x_server();
 
-Status get_window_name(Window w, char **name);
-
 void create_window_decoration(Window window);
 
 void paint_full_button(Widget *button,XExposeEvent e);

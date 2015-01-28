@@ -20,6 +20,8 @@
 
 #include "widgets.h"
 #include "microwm.h"
+#include "icccm.h"
+
 #include "bitmap/close.xpm"
 #include "bitmap/full.xpm"
 #include "bitmap/unfull.xpm"
@@ -94,28 +96,6 @@ void disconnect_x_server() {
     // destroy all widgets
     //wg_destroy_all();
 
-}
-
-/// \brief Get a X Window Name
-///
-/// \param w a X window
-/// \param name of the window (output)
-/// \return 0 for success
-///
-Status get_window_name(Window w, char **name) {
-    int    status;
-    XTextProperty text_prop;
-    char **list;
-    int    num;
-
-    status = XGetWMName(display, w, &text_prop);
-    if (!status || !text_prop.value || !text_prop.nitems) return 0;
-    status = XmbTextPropertyToTextList(display, &text_prop, &list, &num);
-    if (status < Success || !num || !*list) return 0;
-    XFree(text_prop.value);
-    *name = (char *)strdup(*list);
-    XFreeStringList(list);
-    return 1;
 }
 
 // WM functions
@@ -478,22 +458,7 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 	XEvent ev;
 	memset(&ev, 0, sizeof (ev));
 
-	// find supported protocols
-    Atom *protocols,*protocol;
-    int protocols_count=0;
-	XGetWMProtocols(display,window,&protocols,&protocols_count);
-	Bool has_wm_delete_window = False;
-    int i;
-    for (i=0,protocol=protocols;i<protocols_count;i ++,protocol++) {
-        //printf("Atom: %s\n",XGetAtomName(display,*protocol));
-        char *name = XGetAtomName(display,*protocol);
-        int result = strcmp(name,"WM_DELETE_WINDOW");
-        XFree(name);
-        if (!result) { has_wm_delete_window = True ; break ;}
-    }
-	XFree(protocols);
-
-    if (has_wm_delete_window == True ) {
+    if (has_wm_delete_window(window)==True) {
         ev.xclient.type = ClientMessage;
         ev.xclient.window = window;
         ev.xclient.message_type = XInternAtom(display, "WM_PROTOCOLS", True);
