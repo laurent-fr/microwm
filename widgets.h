@@ -48,6 +48,16 @@ typedef enum {
     wm_icon         ///< the window is unmapped
 } wm_state;
 
+/// colors
+typedef enum {
+    col_light,
+    col_dark,
+    col_normal,
+    col_title,
+    col_title_focus,
+    col_count           ///< not a real color, gives the color count
+} colors;
+
 /// \brief Window Manager Window type
 ///
 /// The x,y,whidth&height fields are used to save the position of the window
@@ -85,21 +95,14 @@ typedef struct Widget_s {
     char **xpm;                 ///< a pointer to a bitmap
     char *text;                 ///< a pointer to a text
     WmWindow *wm_window;        ///< a pointer to a WM window structure
+    colors fg_color;            ///< index to the fg color
     void (*on_click)(struct Widget_s *,XButtonPressedEvent);    ///< pointer to the function used on click event
     void (*on_motion)(struct Widget_s *,XMotionEvent);          ///< pointer to the function used on motion event
 	void (*on_unmap)(struct Widget_s *,XUnmapEvent);            ///< pointer to the function used on unmap event
 	void (*on_expose)(struct Widget_s *,XExposeEvent);          ///< pointer to the function used on expose event
 } Widget ;
 
-/// colors
-enum {
-    col_light,
-    col_dark,
-    col_normal,
-    col_title,
-    col_title_focus,
-    col_count           ///< not a real color, gives the color count
-};
+
 
 // protoypes
 // **********

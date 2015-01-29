@@ -44,6 +44,7 @@ void disconnect_x_server();
 void create_window_decoration(Window window);
 
 void paint_full_button(Widget *button,XExposeEvent e);
+void paint_title_bar(Widget *title_bar,XExposeEvent e);
 
 void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e);
 void on_click_decoration(Widget *decoration,XButtonPressedEvent e);

@@ -298,21 +298,18 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
     if (wg->text == NULL ) return;
 
     static Bool init=False;
-    static XRenderColor rcolor_fg,rcolor_bg;
-    static XftColor fcolor_fg,fcolor_bg;
+    static XftColor fcolors[col_count];
+
     if (!init) {
 
-        rcolor_fg.red  = xcolors[col_title_focus].red;
-        rcolor_fg.green=xcolors[col_title_focus].green;
-        rcolor_fg.blue =xcolors[col_title_focus].blue;
-        rcolor_fg.alpha=65535;
-        XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor_fg,&fcolor_fg);
-
-        rcolor_bg.red  = xcolors[col_normal].red;
-        rcolor_bg.green=xcolors[col_normal].green;
-        rcolor_bg.blue =xcolors[col_normal].blue;
-        rcolor_bg.alpha=65535;
-        XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor_bg,&fcolor_bg);
+        for (int i=0;i<col_count;i ++) {
+            XRenderColor rcolor;
+            rcolor.red  = xcolors[i].red;
+            rcolor.green=xcolors[i].green;
+            rcolor.blue =xcolors[i].blue;
+            rcolor.alpha=65535;
+            XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor,&fcolors[i]);
+        }
 
         init = True;
     }
@@ -331,8 +328,8 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     if (extents.width>0) {
         int left = (window_attrs.width - extents.width)/2;
-        XftDrawRect(xftdraw, &fcolor_bg,left,0,extents.width,11);
-        XftDrawString8(xftdraw, &fcolor_fg, _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
+        XftDrawRect(xftdraw, &fcolors[col_normal],left,0,extents.width,11);
+        XftDrawString8(xftdraw, &fcolors[wg->fg_color], _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
 
     }
 

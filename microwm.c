@@ -37,7 +37,7 @@ Colormap colormap;  ///< global variable, the X color map
 
 // colors
 XColor xcolors[col_count];  ///< global array, the X colors available to the application
-char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#ff6600"};
+char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#d06610"};
 
 // cursors
 #define NB_CURSOR 11
@@ -50,6 +50,9 @@ Cursor xcursors[NB_CURSOR]; ///< global array, the X cursors availables to the a
 
 // xft font
 XftFont *_xft_font; ///< global variable, the Xft font used for drawing titles
+
+// Focused window
+Widget *_focused = NULL;
 
 // X11 functions
 // **************
@@ -80,6 +83,7 @@ void connect_x_server() {
     _xft_font =  XftFontOpen (display, screen_num,
                              XFT_FAMILY, XftTypeString, "charter",
                              XFT_SIZE, XftTypeDouble, 8.0,
+                            XFT_WEIGHT,XftTypeInteger,XFT_WEIGHT_BOLD,
                              NULL);
 
 }
@@ -160,7 +164,10 @@ void create_window_decoration(Window window) {
     Widget *title_bar = wg_create(wg_title_bar, decoration,
                                       &title_bar_geom,xcolors[col_normal]);
 
+    title_bar->fg_color = col_title;
+
     title_bar->on_click = &on_click_title_bar;
+    title_bar->on_expose = &paint_title_bar;
     get_window_name(window,&(title_bar->text));
 
     // add close button
@@ -210,6 +217,24 @@ void create_window_decoration(Window window) {
 
 }
 
+/// \brief focus a window
+///
+/// \param decoration the decoration widget
+///
+void focus_wm_window(Widget *decoration) {
+
+    // raise the window
+    XRaiseWindow(display, decoration->w);
+
+    // get input focus
+    XSetInputFocus(display, decoration->wm_window->w, RevertToPointerRoot,CurrentTime);
+
+    // TODO : redraw old and new title bar
+
+    _focused = decoration ;
+
+}
+
 // Paint events
 // *************
 
@@ -232,6 +257,20 @@ void paint_full_button(Widget *button,XExposeEvent e) {
     draw_widget_button(button,e);
 
 }
+
+void paint_title_bar(Widget *title_bar,XExposeEvent e) {
+
+      Widget *decoration =  title_bar->parent;
+
+      if (decoration==_focused)
+        title_bar->fg_color = col_title_focus;
+      else
+        title_bar->fg_color = col_title;
+
+      draw_widget_title_bar(title_bar,e);
+
+}
+
 
 // Widget events
 // **************
@@ -301,7 +340,7 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
     // raise window
     Widget *decoration = title_bar->parent;
-    XRaiseWindow(display, decoration->w);
+    focus_wm_window(decoration);
 
     // get initial mouse_position
     int x_mouse_init = e.x_root;
@@ -373,7 +412,7 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
     // do nothing if window is maximized
     if (decoration->wm_window->state == wm_maximized ) return;
 
-    XRaiseWindow(display, decoration->w);
+    focus_wm_window(decoration);
 
     // get initial mouse_position
     int x_mouse_init = e.x_root;
