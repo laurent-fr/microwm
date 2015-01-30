@@ -169,7 +169,9 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
 ///
 void wg_destroy(Widget *widget) {
 
-    printf("wg_destroy %d\n",widget->type);
+    printf("wg_destroy %d %d\n",widget->type,widget->w);
+
+    if (widget->type==wg_x11) return;
 
     // find childs
     Window root,parent;
@@ -221,6 +223,7 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     widget->type=type;
     widget->text = NULL;
     widget->xpm = NULL;
+    widget->fg_color = 0;
 	widget->wm_window = NULL;
     widget->on_click = NULL;
     widget->on_motion = NULL;
