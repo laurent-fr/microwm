@@ -93,7 +93,7 @@ void get_wm_normal_hints(Window w,icccm_size_hints *hints) {
     XSizeHints hints_return;
     long supplied_return=0;
     Status status = XGetWMNormalHints(display,w,&hints_return,&supplied_return);
-   // if (status!=0) return;
+    if (status==0) return;
 
     if (supplied_return&PMinSize) {
         hints->min_width = hints_return.min_width;

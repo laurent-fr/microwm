@@ -366,6 +366,9 @@ void on_click_title_bar(Widget *title_bar,XButtonPressedEvent e) {
 
             case MotionNotify:
 
+                // discard other motion events
+                while (XCheckTypedEvent(display, MotionNotify, &event));
+
                  // if windows is maximized, set it to normal and update width an height
                 if (decoration->wm_window->state == wm_maximized ) {
                     decoration->wm_window->state = wm_normal;
@@ -453,6 +456,10 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
                 break;
 
             case MotionNotify:
+
+                // discard other motion events
+                while (XCheckTypedEvent(display, MotionNotify, &event));
+
                 x_mouse_current = event.xmotion.x_root;
                 y_mouse_current = event.xmotion.y_root;
 
@@ -552,10 +559,10 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
     if (!decoration) return;
 	WmWindow *wm_window = decoration->wm_window;
 
-	// raise window
-    XRaiseWindow(display, decoration->w);
+	// focus window
+    focus_wm_window(decoration);
 
-	// maximized to normal window
+	// maximized --> normal
 	if (wm_window->state == wm_maximized) {
 
 		wg_resize(decoration,wm_window->width,wm_window->height);
@@ -566,7 +573,7 @@ void on_click_full(Widget *button,XButtonPressedEvent e) {
 		return;
 	}
 
-	// normal to maximized window
+	// normal --> maximized
 	if (wm_window->state == wm_normal) {
 		// get root window size
 		Window root = RootWindow(display, screen_num);

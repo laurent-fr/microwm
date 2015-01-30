@@ -291,8 +291,6 @@ void wg_resize(Widget *wg,unsigned int new_width, unsigned int new_height) {
 ///
 /// The text is centered on a background rectangle
 ///
-/// \todo clipping
-///
 void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     if (wg->text == NULL ) return;
@@ -327,6 +325,16 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
     xftdraw = XftDrawCreate(display,wg->w,DefaultVisual(display,0),DefaultColormap(display,0));
 
     if (extents.width>0) {
+
+        // clipping
+        Region region = XCreateRegion();
+        XRectangle rect = { .x= e.x, .y = e.y, .width = e.width , .height = e.height };
+        XUnionRectWithRegion(&rect,region,region);  // union of an empty region with a rectangle
+                                                    // output = the same region, which now as the size of the rectangle
+        XftDrawSetClip(xftdraw,region);
+        XDestroyRegion(region);
+
+        // draw the title
         int left = (window_attrs.width - extents.width)/2;
         XftDrawRect(xftdraw, &fcolors[col_normal],left,0,extents.width,11);
         XftDrawString8(xftdraw, &fcolors[wg->fg_color], _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
@@ -351,8 +359,6 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 ///
 /// * light nw/dark se color for volume effect
 /// * dark nw/light se color for depth effect
-///
-/// \todo clipping
 ///
 void draw_shadow(Window w,GC gc,int x1,int y1,int x2,int y2,XColor nw,XColor se) {
 
@@ -384,8 +390,8 @@ void draw_widget_button(Widget *wg,XExposeEvent e) {
     GC gc = XCreateGC(display, wg->w, 0, NIL);
 
     // clipping
-    //XRectangle rectangle =  { .x=e.x, .y=e.y, .width = e.width, .height = e.height } ;
-    //XSetClipRectangles(display,gc,0,0,&rectangle,1,Unsorted);
+    XRectangle rectangle =  { .x=0, .y=0, .width = e.width, .height = e.height } ;
+    XSetClipRectangles(display,gc,e.x,e.y,&rectangle,1,Unsorted);
 
     XPutImage(display,wg->w,gc,image,0,0,2,2,11,11);
 
@@ -401,8 +407,6 @@ void draw_widget_button(Widget *wg,XExposeEvent e) {
 ///
 /// Draw a shadow on the border of the window
 ///
-/// \todo clipping
-///
 void draw_widget_decoration(Widget *wg,XExposeEvent e) {
 
     // get decoration size
@@ -415,9 +419,9 @@ void draw_widget_decoration(Widget *wg,XExposeEvent e) {
     // draw decoration
     GC gc = XCreateGC(display, wg->w, 0, NIL);
 
-    // clipping
-    //XRectangle rectangle =  { .x=e.x, .y=e.y, .width = e.width, .height = e.height } ;
-    //XSetClipRectangles(display,gc,0,0,&rectangle,1,Unsorted);
+     // clipping
+    XRectangle rectangle =  { .x=0, .y=0, .width = e.width, .height = e.height } ;
+    XSetClipRectangles(display,gc,e.x,e.y,&rectangle,1,Unsorted);
 
 
     draw_shadow(wg->w,gc,0,0,width-1,height-1,xcolors[col_light],xcolors[col_dark]);
