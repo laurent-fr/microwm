@@ -89,9 +89,9 @@ void connect_x_server() {
     allocate_xcolor(_config[cfg_col_normal].string,&_xcolors[xcol_normal]);
 
     // allocate Xft colors
-    allocate_xftcolor(_config[cfg_title_bar_font_color_focus].string,&_xftcolors[xftcol_title_focus]);
-    allocate_xftcolor(_config[cfg_title_bar_font_color_unfocus].string,&_xftcolors[xftcol_title]);
-    allocate_xftcolor(_config[cfg_col_normal].string,&_xftcolors[xftcol_normal]);
+   allocate_xftcolor(_config[cfg_title_bar_font_color_focus].string,&_xftcolors[xftcol_title_focus]);
+   allocate_xftcolor(_config[cfg_title_bar_font_color_unfocus].string,&_xftcolors[xftcol_title]);
+   allocate_xftcolor(_config[cfg_col_normal].string,&_xftcolors[xftcol_normal]);
 
     // init cursors
     for(int i=0;i<NB_CURSOR;i ++) {
@@ -346,7 +346,9 @@ void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
 	if (e.event == DefaultRootWindow(display))
         return;
 
-    printf("Unmap xclient %d %d\n",e.window,decoration->w);
+    #ifdef DEBUG
+        printf("Unmap xclient %d %d\n",(int)e.window,(int)decoration->w);
+    #endif
 
     XGrabServer(display);
     // TODO : check if the window still exists
@@ -548,7 +550,7 @@ void on_click_decoration(Widget *decoration,XButtonPressedEvent e) {
 ///
 /// If supported, send a WM_DELETE_WINDOW to the client
 /// otherwise kill the client
-void on_click_close(Widget *button,XButtonPressedEvent e) {
+void on_click_close(Widget *button,XButtonPressedEvent e  __attribute__((__unused__)) ) {
 
     Window window = button->parent->parent->wm_window->w;
 
@@ -576,7 +578,7 @@ void on_click_close(Widget *button,XButtonPressedEvent e) {
 ///
 /// \todo implement the function ....
 ///
-void on_click_iconify(Widget *button,XButtonPressedEvent e) {
+void on_click_iconify(Widget *button  __attribute__((__unused__)),XButtonPressedEvent e  __attribute__((__unused__)) ) {
 
     printf("Not implemented yet.\n");
 }
@@ -588,7 +590,7 @@ void on_click_iconify(Widget *button,XButtonPressedEvent e) {
 ///
 /// When maximizing, the old position of the window is stored in decoration->wm_window
 ///
-void on_click_full(Widget *button,XButtonPressedEvent e) {
+void on_click_full(Widget *button,XButtonPressedEvent e  __attribute__((__unused__)) ) {
 
     Widget *decoration = button->parent->parent;
     if (!decoration) return;
@@ -684,7 +686,9 @@ void on_unmap_event(XUnmapEvent e) {
 	Widget *widget = wg_find_from_window(e.window);
     if (!widget) return;
 
-    printf("on_unmap_event e.w=%d, widget->=%d\n",e.window,widget->w);
+    #ifdef DEBUG
+        printf("on_unmap_event e.w=%d, widget->=%d\n",(int)e.window,(int)widget->w);
+    #endif
 
 	if (widget->on_unmap) widget->on_unmap(widget,e);
 }
@@ -711,7 +715,9 @@ void on_configure_request(XConfigureRequestEvent e) {
 
 void on_configure_notify(XConfigureEvent e) {
 
-    printf("Configure notify %d\n",e.window);
+    #ifdef DEBUG
+        printf("Configure notify %d\n",(int)e.window);
+    #endif // DEBUG
 
 	Widget *widget = wg_find_from_window(e.window);
     if (!widget) return;
@@ -799,7 +805,7 @@ void main_event_loop() {
 			break;
 
 		case DestroyNotify:
-			printf("Destroy event %d\n",event.xdestroywindow.window);
+			printf("Destroy event \n");
 			break;
 
         case MotionNotify:

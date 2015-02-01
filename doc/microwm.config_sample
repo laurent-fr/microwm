@@ -1,0 +1,15 @@
+# window colors
+color.normal = "#dbdbdb"
+color.dark = "#978d8d"
+color.light = "#f4f4f4"
+
+# window size
+frame.margin = 4
+frame.margin_top = 20
+
+# title bar
+title_bar.font.name = "charter"
+title_bar.font.size = 8
+title_bar.font.weight = "bold"
+title_bar.color.unfocus = "#333333"
+title_bar.color.focus = "#d06610"

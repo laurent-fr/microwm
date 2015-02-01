@@ -18,6 +18,7 @@
 #include <signal.h>
 
 #include "microwm.h"
+#include "config.h"
 
 /// \brief Called on exit
 ///
@@ -30,10 +31,13 @@ void int_handler() {
 
 /// \brief The main program
 ///
-int main(int ARGC, char *ARGV[]) {
+int main() {
 
     // register signals
     signal(SIGINT, int_handler);
+
+    // read the config file
+    config_load();
 
     // connect to X server
     connect_x_server();

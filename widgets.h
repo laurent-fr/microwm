@@ -114,6 +114,7 @@ Widget *wg_find_from_window(Window w);
 Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor color);
 Widget *wg_create_from_x(widget_type,Window w,Widget *parent,WgGeometry *geometry);
 
+void wg_free_widget(Widget *widget);
 void wg_destroy(Widget *widget);
 
 void wg_move(Widget *wg,int new_x, int new_y);

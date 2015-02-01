@@ -187,7 +187,9 @@ void wg_free_widget(Widget *widget) {
 ///
 void wg_destroy(Widget *widget) {
 
-    printf("wg_destroy %d %d\n",widget->type,widget->w);
+    #ifdef DEBUG
+        printf("wg_destroy %d %d\n",(int)widget->type,(int)widget->w);
+    #endif // DEBUG
 
    // if (!widget->w) return;
 
@@ -198,13 +200,18 @@ void wg_destroy(Widget *widget) {
     XQueryTree(display, widget->w, &root, &parent, &children, &nchildren);
 
     for(unsigned int i=0; i<nchildren; i ++) {
-            printf("Widget->w=%d, nchild=%d, child nb=%d\n",widget->w,nchildren,i);
+        #ifdef DEBUG
+            printf("Widget->w=%d, nchild=%d, child nb=%d\n",(int)widget->w,nchildren,i);
+        #endif // DEBUG
         Widget *child=wg_find_from_window(children[i]);
         if (!child) { printf("Child not found\n"); continue; }
         wg_destroy(child);
     }
 
-printf("Destroy widget type=%d,window=%d\n",widget->type,widget->w);
+      #ifdef DEBUG
+        printf("Destroy widget type=%d,window=%d\n",widget->type,(int)widget->w);
+        #endif // DEBUG
+
          // first destroy the x window
         if (widget->type != wg_x11) {
                 XUnmapWindow(display,widget->w);

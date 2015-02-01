@@ -2,7 +2,7 @@
 CC=colorgcc
 #CC=gcc
 
-CFLAGS= -g -W -Wall -std=c11 -pedantic
+CFLAGS= -g -W -Wall -Werror -std=c11 -pedantic -D_GNU_SOURCE -DDEBUG
 CFLAGS+= $(shell pkg-config --cflags xft)
 CFLAGS+= $(shell pkg-config --cflags xpm)
 CFLAGS+= $(shell pkg-config --cflags x11)
