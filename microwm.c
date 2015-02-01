@@ -18,9 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "config.h"
 #include "widgets.h"
-#include "microwm.h"
 #include "icccm.h"
+#include "microwm.h"
 
 #include "bitmap/close.xpm"
 #include "bitmap/full.xpm"
@@ -28,7 +29,10 @@
 #include "bitmap/iconify.xpm"
 
 // globals
-// ********
+// ****
+
+// the config array
+extern ConfigElement _config[];
 
 // X11
 Display *display;   ///< global variable, the X display
@@ -36,8 +40,10 @@ int screen_num;     ///< global variable, the X screen number
 Colormap colormap;  ///< global variable, the X color map
 
 // colors
-XColor xcolors[col_count];  ///< global array, the X colors available to the application
-char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#d06610"};
+XColor _xcolors[xcol_count];  ///< global array, the X colors available to the application
+XftColor _xftcolors[xftcol_count];
+
+//char *colors_text[] = {"#f4f4f4","#978d8d","#dbdbdb","#333333","#d06610"};
 
 // cursors
 #define NB_CURSOR 11
@@ -57,6 +63,15 @@ Widget *_focused = NULL;
 // X11 functions
 // **************
 
+void allocate_xcolor(char *color_text,XColor *xcolor) {
+    XParseColor(display, colormap,color_text,xcolor);
+    XAllocColor(display, colormap, xcolor);
+}
+
+void allocate_xftcolor(char *color_text,XftColor *xftcolor) {
+            XftColorAllocName(display,DefaultVisual(display,0),DefaultColormap(display,0),color_text,xftcolor);
+}
+
 /// \brief Init X connection
 ///
 /// Open X Display, allocate X colors, X cursors & Xft font
@@ -68,11 +83,15 @@ void connect_x_server() {
     screen_num = DefaultScreen(display);
     colormap = XDefaultColormap(display,screen_num);
 
-    // allocate colors
-    for (int i=0; i<col_count; i++) {
-        XParseColor(display,colormap,colors_text[i],&xcolors[i]);
-        XAllocColor(display, colormap, &xcolors[i]);
-    }
+    // allocate X colors
+    allocate_xcolor(_config[cfg_col_light].string,&_xcolors[xcol_light]);
+    allocate_xcolor(_config[cfg_col_dark].string,&_xcolors[xcol_dark]);
+    allocate_xcolor(_config[cfg_col_normal].string,&_xcolors[xcol_normal]);
+
+    // allocate Xft colors
+    allocate_xftcolor(_config[cfg_title_bar_font_color_focus].string,&_xftcolors[xftcol_title_focus]);
+    allocate_xftcolor(_config[cfg_title_bar_font_color_unfocus].string,&_xftcolors[xftcol_title]);
+    allocate_xftcolor(_config[cfg_col_normal].string,&_xftcolors[xftcol_normal]);
 
     // init cursors
     for(int i=0;i<NB_CURSOR;i ++) {
@@ -80,10 +99,14 @@ void connect_x_server() {
 	}
 
 	// open xft font
+	int font_weight = XFT_WEIGHT_MEDIUM;
+	if (!strcmp(_config[cfg_title_bar_font_weight].string,"bold")) font_weight = XFT_WEIGHT_BOLD;
+
+
     _xft_font =  XftFontOpen (display, screen_num,
-                             XFT_FAMILY, XftTypeString, "charter",
-                             XFT_SIZE, XftTypeDouble, 8.0,
-                            XFT_WEIGHT,XftTypeInteger,XFT_WEIGHT_BOLD,
+                             XFT_FAMILY, XftTypeString, _config[cfg_title_bar_font_name].string ,
+                             XFT_SIZE, XftTypeDouble, (double)_config[cfg_title_bar_font_size].number,
+                            XFT_WEIGHT,XftTypeInteger,font_weight,
                              NULL);
 
 }
@@ -96,6 +119,8 @@ void disconnect_x_server() {
 
     // free xft font
     XftFontClose(display,_xft_font);
+
+    // TODO : free Xft colors
 
     // destroy all widgets
     //wg_destroy_all();
@@ -152,7 +177,7 @@ void create_window_decoration(Window window) {
     WgGeometry frame_geom = { .left=deco_x, .top=deco_y, .width=deco_w, .height=deco_h , .bottom=-1, .right=-1 };
 
     Widget *decoration = wg_create(wg_decoration, NULL,
-                                       &frame_geom,xcolors[col_normal]);
+                                       &frame_geom,_xcolors[xcol_normal]);
 
     decoration->on_motion = &on_motion_decoration;
     decoration->on_click = &on_click_decoration;
@@ -162,9 +187,9 @@ void create_window_decoration(Window window) {
     int title_height=DECORATION_MARGIN_TOP-DECORATION_MARGIN;
     WgGeometry title_bar_geom = { .left=DECORATION_MARGIN, .top=DECORATION_MARGIN-1, .width=-1, .height=title_height, .bottom=-1, .right=DECORATION_MARGIN };
     Widget *title_bar = wg_create(wg_title_bar, decoration,
-                                      &title_bar_geom,xcolors[col_normal]);
+                                      &title_bar_geom,_xcolors[xcol_normal]);
 
-    title_bar->fg_color = col_title;
+    title_bar->fg_color = xftcol_title;
 
     title_bar->on_click = &on_click_title_bar;
     title_bar->on_expose = &paint_title_bar;
@@ -174,7 +199,7 @@ void create_window_decoration(Window window) {
     int button_width=title_height-1;
     WgGeometry close_geom = { .left=0, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=-1 };
     Widget *close_button = wg_create(wg_button,title_bar,
-                                         &close_geom,xcolors[col_normal]);
+                                         &close_geom,_xcolors[xcol_normal]);
 
     close_button->xpm = close_xpm;
     close_button->on_click = &on_click_close;
@@ -182,7 +207,7 @@ void create_window_decoration(Window window) {
     // add maximize button
     WgGeometry full_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=0 };
     Widget *full_button = wg_create(wg_button,title_bar,
-                                        &full_geom,xcolors[col_normal]);
+                                        &full_geom,_xcolors[xcol_normal]);
 
     full_button->xpm = full_xpm;
     full_button->on_click = &on_click_full;
@@ -191,7 +216,7 @@ void create_window_decoration(Window window) {
     // add iconify button
     WgGeometry iconify_geom = { .left=-1, .top=0, .width=button_width, .height=button_width, .bottom=-1, .right=button_width-1};
     Widget *iconify_button = wg_create(wg_button,title_bar,
-                                           &iconify_geom,xcolors[col_normal]);
+                                           &iconify_geom,_xcolors[xcol_normal]);
 
     iconify_button->xpm = iconify_xpm;
     iconify_button->on_click = &on_click_iconify;
@@ -265,9 +290,9 @@ void paint_title_bar(Widget *title_bar,XExposeEvent e) {
       Widget *decoration =  title_bar->parent;
 
       if (decoration==_focused)
-        title_bar->fg_color = col_title_focus;
+        title_bar->fg_color = xftcol_title_focus;
       else
-        title_bar->fg_color = col_title;
+        title_bar->fg_color = xftcol_title;
 
       draw_widget_title_bar(title_bar,e);
 

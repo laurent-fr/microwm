@@ -19,17 +19,22 @@
 #include <stdlib.h>
 #include <search.h>
 
+#include "config.h"
 #include "widgets.h"
 
 // widgets tree
 void *widget_list = NULL;  ///< the widget tree (libc tree)
+
+// the config array
+extern ConfigElement _config[];
 
 // the X11 display must be declared somewhere
 extern Display *display;
 extern int screen_num;
 
 extern Cursor xcursors[];
-extern XColor xcolors[];
+extern XColor _xcolors[];
+extern XftColor _xftcolors[];
 extern XftFont *_xft_font;
 
 // widgets functions
@@ -165,7 +170,7 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
 void wg_free_widget(Widget *widget) {
     if (!widget) return;
     void *delete = tdelete((void *)widget,&widget_list,widget_cmp);
-    if (tdelete==NULL) {
+    if (delete==NULL) {
             printf("Nothing Deleted\n");
         }
     if (widget->text) free(widget->text);
@@ -313,23 +318,6 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
     if (wg->text == NULL ) return;
 
-    static Bool init=False;
-    static XftColor fcolors[col_count];
-
-    if (!init) {
-
-        for (int i=0;i<col_count;i ++) {
-            XRenderColor rcolor;
-            rcolor.red  = xcolors[i].red;
-            rcolor.green=xcolors[i].green;
-            rcolor.blue =xcolors[i].blue;
-            rcolor.alpha=65535;
-            XftColorAllocValue(display,DefaultVisual(display,0),DefaultColormap(display,0),&rcolor,&fcolors[i]);
-        }
-
-        init = True;
-    }
-
     // get  window size
     XWindowAttributes window_attrs;
     XGetWindowAttributes(display,wg->w,&window_attrs);
@@ -354,8 +342,8 @@ void draw_widget_title_bar(Widget *wg,XExposeEvent e) {
 
         // draw the title
         int left = (window_attrs.width - extents.width)/2;
-        XftDrawRect(xftdraw, &fcolors[col_normal],left,0,extents.width,11);
-        XftDrawString8(xftdraw, &fcolors[wg->fg_color], _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
+        XftDrawRect(xftdraw, &_xftcolors[xftcol_normal],left,0,extents.width,11);
+        XftDrawString8(xftdraw, &_xftcolors[wg->fg_color], _xft_font, left, 11 , (XftChar8 *)wg->text, strlen(wg->text));
 
     }
 
@@ -442,8 +430,9 @@ void draw_widget_decoration(Widget *wg,XExposeEvent e) {
     XSetClipRectangles(display,gc,e.x,e.y,&rectangle,1,Unsorted);
 
 
-    draw_shadow(wg->w,gc,0,0,width-1,height-1,xcolors[col_light],xcolors[col_dark]);
-    draw_shadow(wg->w,gc,DECORATION_MARGIN-1,DECORATION_MARGIN_TOP-1,width-DECORATION_MARGIN,height-DECORATION_MARGIN,xcolors[col_dark],xcolors[col_light]);
+    draw_shadow(wg->w,gc,0,0,width-1,height-1,_xcolors[xcol_light],_xcolors[xcol_dark]);
+    draw_shadow(wg->w,gc,DECORATION_MARGIN-1,DECORATION_MARGIN_TOP-1,width-DECORATION_MARGIN,height-DECORATION_MARGIN,
+                _xcolors[xcol_dark],_xcolors[xcol_light]);
 
     XFlush(display);
     XFreeGC(display,gc);

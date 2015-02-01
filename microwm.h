@@ -38,6 +38,9 @@ enum {
 // prototypes
 // **********
 
+void allocate_xcolor(char *color_text,XColor *xcolor);
+void allocate_xftcolor(char *color_text,XftColor *xftcolor);
+
 void connect_x_server();
 void disconnect_x_server();
 

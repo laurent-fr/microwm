@@ -2,7 +2,7 @@
 CC=colorgcc
 #CC=gcc
 
-CFLAGS= -g -W -Wall -std=gnu99 -pedantic
+CFLAGS= -g -W -Wall -std=c11 -pedantic
 CFLAGS+= $(shell pkg-config --cflags xft)
 CFLAGS+= $(shell pkg-config --cflags xpm)
 CFLAGS+= $(shell pkg-config --cflags x11)
@@ -13,8 +13,8 @@ LDFLAGS+=$(shell pkg-config --libs xpm)
 
 all: microwm
 
-microwm: main.o microwm.o widgets.o icccm.o
-	$(CC) -o microwm widgets.o icccm.o microwm.o main.o $(LDFLAGS)
+microwm: main.o microwm.o widgets.o icccm.o config.o
+	$(CC) -o microwm widgets.o icccm.o microwm.o config.o main.o $(LDFLAGS)
 
 main.o: main.c
 	$(CC) -c main.c $(CFLAGS)
@@ -27,6 +27,9 @@ widgets.o: widgets.c widgets.h
 
 icccm.o: icccm.c icccm.h
 	$(CC) -c icccm.c $(CFLAGS)
+
+config.o: config.c config.h
+	$(CC) -c config.c $(CFLAGS)
 
 clean:
 	rm *.o

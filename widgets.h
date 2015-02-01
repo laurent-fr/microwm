@@ -27,12 +27,6 @@
 
 #define NIL (0)       ///< A name for the void pointer
 
-#define DECORATION_MARGIN 4         ///< The distance between the border of the X window and the decoration
-#define DECORATION_MARGIN_TOP 20    ///< The title bar height
-
-#define MIN_WINDOW_WIDTH (2*DECORATION_MARGIN+16)   ///< minimum width of a X window
-#define MIN_WINDOW_HEIGHT (DECORATION_MARGIN+DECORATION_MARGIN_TOP+16) ///< minimum height of a X window
-
 /// Types of widgets
 typedef enum {
     wg_x11,         ///< a native X11 window
@@ -50,13 +44,18 @@ typedef enum {
 
 /// colors
 typedef enum {
-    col_light,
-    col_dark,
-    col_normal,
-    col_title,
-    col_title_focus,
-    col_count           ///< not a real color, gives the color count
-} colors;
+    xcol_light,
+    xcol_dark,
+    xcol_normal,
+    xcol_count           ///< not a real color, gives the color count
+} xcolors;
+
+typedef enum {
+    xftcol_normal,
+    xftcol_title,
+    xftcol_title_focus,
+    xftcol_count
+} xftcolors;
 
 /// \brief Window Manager Window type
 ///
@@ -95,7 +94,7 @@ typedef struct Widget_s {
     char **xpm;                 ///< a pointer to a bitmap
     char *text;                 ///< a pointer to a text
     WmWindow *wm_window;        ///< a pointer to a WM window structure
-    colors fg_color;            ///< index to the fg color
+    int fg_color;            ///< index to the fg color
     void (*on_click)(struct Widget_s *,XButtonPressedEvent);    ///< pointer to the function used on click event
     void (*on_motion)(struct Widget_s *,XMotionEvent);          ///< pointer to the function used on motion event
 	void (*on_unmap)(struct Widget_s *,XUnmapEvent);            ///< pointer to the function used on unmap event
