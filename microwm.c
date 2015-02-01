@@ -202,6 +202,8 @@ void create_window_decoration(Window window) {
 
     xclient->on_unmap = &on_unmap_xclient;
 
+    XSelectInput(display, xclient->w ,  SubstructureRedirectMask );
+
     // add to SaveSet
     XAddToSaveSet(display,window);
 
@@ -319,13 +321,21 @@ void on_unmap_xclient(Widget *xclient,XUnmapEvent e) {
 	if (e.event == DefaultRootWindow(display))
         return;
 
-    printf("Unmap xclient\n");
+    printf("Unmap xclient %d %d\n",e.window,decoration->w);
 
+    XGrabServer(display);
+    // TODO : check if the window still exists
+
+    //XUnmapWindow(display,e.window);
     //XReparentWindow(display,e.window,RootWindow(display, screen_num),0,0 );
-    //XRemoveFromSaveSet(display,e.window);
+    // XRemoveFromSaveSet(display,e.window);
 
     wg_destroy(decoration);
 
+    wg_free_widget(xclient); // TODO : call only if the x window does'nt exists
+
+    XUngrabServer(display);
+    XFlush(display);
 
 }
 
@@ -649,6 +659,8 @@ void on_unmap_event(XUnmapEvent e) {
 	Widget *widget = wg_find_from_window(e.window);
     if (!widget) return;
 
+    printf("on_unmap_event e.w=%d, widget->=%d\n",e.window,widget->w);
+
 	if (widget->on_unmap) widget->on_unmap(widget,e);
 }
 
@@ -669,6 +681,19 @@ void on_configure_request(XConfigureRequestEvent e) {
     changes.border_width=0;
 
     XConfigureWindow(display,e.window, CWX|CWY|CWWidth| CWHeight|CWBorderWidth ,&changes);
+
+}
+
+void on_configure_notify(XConfigureEvent e) {
+
+    printf("Configure notify %d\n",e.window);
+
+	Widget *widget = wg_find_from_window(e.window);
+    if (!widget) return;
+
+    printf("type %d\n",widget->type);
+
+    printf("x=%d y=%d w=%d h=%d\n",e.x,e.y,e.width,e.height);
 
 }
 
@@ -697,6 +722,8 @@ void reparent_root_windows() {
 
     // ungrap display
     XUngrabServer(display);
+
+    XFlush(display);
 
 }
 
@@ -733,6 +760,10 @@ void main_event_loop() {
             on_configure_request(event.xconfigurerequest);
             break;
 
+        case ConfigureNotify:
+            on_configure_notify(event.xconfigure);
+        break;
+
         case Expose:
             on_expose_event(event.xexpose);
             break;
@@ -743,7 +774,7 @@ void main_event_loop() {
 			break;
 
 		case DestroyNotify:
-			printf("Destroy event\n");
+			printf("Destroy event %d\n",event.xdestroywindow.window);
 			break;
 
         case MotionNotify:

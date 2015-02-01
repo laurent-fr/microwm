@@ -35,8 +35,6 @@ extern XftFont *_xft_font;
 // widgets functions
 // ******************
 
-
-
 /// \brief compare function for LIBC trees
 ///
 /// \param wg1 first widget
@@ -48,7 +46,10 @@ extern XftFont *_xft_font;
 int widget_cmp(const void *wg1,const void *wg2) {
     Widget *wwg1=(Widget *)wg1;
     Widget *wwg2=(Widget *)wg2;
-    return wwg1->w - wwg2->w;
+
+    if (wwg1->w == wwg2->w) return 0;
+    else if (wwg2->w >= wwg1->w ) return 1;
+    else return -1;
 }
 
 /// \brief resolve the geometry constraints for a widget
@@ -160,6 +161,18 @@ Widget *wg_create(widget_type type,Widget *parent,WgGeometry *geometry,XColor co
     return new_widget;
 }
 
+
+void wg_free_widget(Widget *widget) {
+    if (!widget) return;
+    void *delete = tdelete((void *)widget,&widget_list,widget_cmp);
+    if (tdelete==NULL) {
+            printf("Nothing Deleted\n");
+        }
+    if (widget->text) free(widget->text);
+    if (widget->wm_window) free (widget->wm_window);
+    free(widget);
+}
+
 /// \brief recursively destroy a widget and its childs
 ///
 /// \param widget the first widget to destroy
@@ -171,7 +184,7 @@ void wg_destroy(Widget *widget) {
 
     printf("wg_destroy %d %d\n",widget->type,widget->w);
 
-    if (widget->type==wg_x11) return;
+   // if (!widget->w) return;
 
     // find childs
     Window root,parent;
@@ -180,12 +193,13 @@ void wg_destroy(Widget *widget) {
     XQueryTree(display, widget->w, &root, &parent, &children, &nchildren);
 
     for(unsigned int i=0; i<nchildren; i ++) {
+            printf("Widget->w=%d, nchild=%d, child nb=%d\n",widget->w,nchildren,i);
         Widget *child=wg_find_from_window(children[i]);
-        if (!child) continue;
+        if (!child) { printf("Child not found\n"); continue; }
         wg_destroy(child);
     }
 
-printf("Destroy widget %d\n",widget->type);
+printf("Destroy widget type=%d,window=%d\n",widget->type,widget->w);
          // first destroy the x window
         if (widget->type != wg_x11) {
                 XUnmapWindow(display,widget->w);
@@ -193,11 +207,7 @@ printf("Destroy widget %d\n",widget->type);
         }
 
         // then the widget
-        if (widget->text) free(widget->text);
-        if (widget->wm_window) free (widget->wm_window);
-
-        tdelete(widget,&widget_list,widget_cmp);
-        free(widget);
+        wg_free_widget(widget);
 
 
     if (children) XFree(children);
@@ -233,7 +243,12 @@ Widget *wg_create_from_x(widget_type type,Window w,Widget *parent,WgGeometry *ge
     printf("create_window %d %d\n",(int)w,type);
 
     // save widget into list
-    tsearch(widget,&widget_list,widget_cmp);
+    void *insert = tsearch((void *)widget,&widget_list,widget_cmp);
+    if (insert==NULL) {
+        printf("Widget insert error\n");
+    } else if (*(Widget **)insert != widget) {
+        printf("Widget already inserted !\n");
+    }
 
     return widget;
 }
