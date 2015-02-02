@@ -23,12 +23,24 @@ See [DOxygen documentation](http://laurent-fr.github.io/microwm/)
 Compile :
 ---------
 
+Dependencies :
+
 	apt-get install libx11-dev libxpm-dev libxft-dev libfreetype6-dev
+
+Testing :
 
 	apt-get install colorgcc
 	(or change CC=gcc or CC=clang in the Makefile)
+	
+	make -f MAkefile.generic
 
-    make
+Release :
+
+	apt-get install cmake
+	cmake -G "Unix Makefiles"
+	make
+	sudo make install
+
 
 Run :
 -----
